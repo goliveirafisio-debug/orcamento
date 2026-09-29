@@ -275,6 +275,9 @@
     <label for="p_emp">Nome da empresa / profissional *</label><input id="p_emp" data-p="emp" placeholder="Ex.: Silva Segurança Eletrônica">
     <div class="row">
       <div><label for="p_resp">Seu nome *</label><input id="p_resp" data-p="resp" placeholder="Ex.: Carlos Silva"></div>
+      <div><label for="p_cargo">Cargo</label><input id="p_cargo" data-p="cargo" placeholder="Responsável técnico"></div>
+    </div>
+    <div class="row">
       <div><label for="p_doc">CNPJ / CPF</label><input id="p_doc" data-p="doc" inputmode="numeric"></div>
     </div>
     <div class="row">
@@ -410,7 +413,7 @@ const PAG_SUG = [
   'Cartão de crédito em até 3x sem juros.',
   'Boleto com vencimento em 7 dias após a conclusão.'
 ];
-const PROF_PADRAO = { emp: 'IDL Monitoramento e Automação', wa: '(81) 98622-0444', slogan: 'Tecnologia ao seu serviço' };
+const PROF_PADRAO = { emp: 'IDL Monitoramento e Automação', resp: 'Isaias', cargo: 'Responsável técnico', wa: '(81) 98622-0444', slogan: 'Tecnologia ao seu serviço' };
 let prof = { ...PROF_PADRAO, ...LS.get('orc.prof', {}) };
 let q, cur = 0;
 
@@ -516,7 +519,7 @@ ${link || '[o link do orçamento entra aqui]'}
 Fico à disposição para qualquer esclarecimento que se fizer necessário.
 
 Atenciosamente,
-${prof.resp || ''}${prof.emp ? '\n' + prof.emp : ''}`;
+${prof.resp || ''}${prof.cargo ? ' — ' + prof.cargo : ''}${prof.emp ? '\n' + prof.emp : ''}`;
 }
 function baseURL(){
   if (prof.url) return prof.url.split('#')[0];
@@ -524,7 +527,7 @@ function baseURL(){
   return '';
 }
 async function buildLink(){
-  const payload = { p: { emp:prof.emp, resp:prof.resp, doc:prof.doc, wa:prof.wa, email:prof.email, ramo:prof.ramo, tel:prof.tel, insta:prof.insta, slogan:prof.slogan }, q: {...q, msg: undefined, id: undefined, seq: undefined} };
+  const payload = { p: { emp:prof.emp, resp:prof.resp, cargo:prof.cargo, doc:prof.doc, wa:prof.wa, email:prof.email, ramo:prof.ramo, tel:prof.tel, insta:prof.insta, slogan:prof.slogan }, q: {...q, msg: undefined, id: undefined, seq: undefined} };
   return baseURL() + '#o=' + await encode(payload);
 }
 let lastLink = '';
@@ -640,7 +643,7 @@ function docHTML(p, x, clientMode){
       <div class="brand">${LOGO(48)}<div><div class="emp">${esc(p.emp || 'Prestador')}</div>
       <div class="meta" style="margin-top:0">${esc(p.ramo || '')}${p.doc ? ' · ' + esc(p.doc) : ''}</div></div></div>
       <div class="slogan">${esc(slogan(p))}</div>
-      <div class="meta">${esc(p.resp || '')}${p.wa ? ' · WhatsApp ' + esc(p.wa) : ''}${p.email ? ' · ' + esc(p.email) : ''}</div>
+      <div class="meta">${esc(p.resp || '')}${p.cargo ? ' (' + esc(p.cargo) + ')' : ''}${p.wa ? ' · WhatsApp ' + esc(p.wa) : ''}${p.email ? ' · ' + esc(p.email) : ''}</div>
       <div class="tag">Orçamento nº ${esc(x.n)} · ${esc(x.data)}${x.val ? ' · válido até ' + addDays(x.data, x.val) : ''}</div>
     </div>
     <section><h4>Cliente</h4>
@@ -742,8 +745,8 @@ function printHTML(p, x){
     <div class="pd-sec"><h5>Condições comerciais</h5>
       <div class="pd-kv" style="grid-template-columns:1fr">${kv('Forma de pagamento', x.pag)}${kv('Prazo de execução', x.prazo)}${kv('Garantia', x.gar)}${kv('Validade da proposta', x.val ? x.val + ' dias' : '')}${kv('Observações', x.obs)}</div>
     </div>
-    <p class="pd-close">Permanecemos à disposição para quaisquer esclarecimentos que se fizerem necessários.<br>Atenciosamente, <b>${esc(p.resp || '')}</b>${p.emp ? ' — ' + esc(p.emp) : ''}</p>
-    <div class="pd-sign"><div>${esc(c.nome || 'Contratante')}<br>Contratante — de acordo</div><div>${esc(p.emp || 'Contratada')}${p.doc ? '<br>' + esc(p.doc) : '<br>Contratada'}</div></div>
+    <p class="pd-close">Permanecemos à disposição para quaisquer esclarecimentos que se fizerem necessários.<br>Atenciosamente, <b>${esc(p.resp || '')}</b>${p.cargo ? ', ' + esc(p.cargo) : ''}${p.emp ? ' — ' + esc(p.emp) : ''}</p>
+    <div class="pd-sign"><div>${esc(c.nome || 'Contratante')}<br>Contratante — de acordo</div><div>${esc(p.resp || p.emp || 'Contratada')}${p.cargo ? ' — ' + esc(p.cargo) : ''}<br>${esc(p.emp || 'Contratada')}${p.doc ? ' · ' + esc(p.doc) : ''}</div></div>
   </td></tr></tbody>
   <tfoot><tr><td><div style="height:16mm"></div></td></tr></tfoot></table>
   <div class="pd-foot"><div class="c">${contatos || '<span>Telefone · E-mail · Instagram</span>'}</div><div class="s">${esc(p.emp || '')}${p.doc ? ' · ' + esc(p.doc) : ''}</div></div>`;
