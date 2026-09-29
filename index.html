@@ -93,6 +93,17 @@
   @media (max-width:520px){.decide .btns{grid-template-columns:1fr}}
   .foot{text-align:center;color:var(--muted);font-size:12px;margin:18px 0}
 
+  .fotos{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+  .foto{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fbfcfd;position:relative}
+  .foto img{width:100%;height:120px;object-fit:cover;display:block}
+  .foto input{border:0;border-top:1px solid var(--line);border-radius:0;font-size:13px;padding:8px}
+  .foto .x{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.55);color:#fff;border:0;border-radius:50%;width:28px;height:28px;font-size:16px;cursor:pointer}
+  .chk{display:flex;gap:8px;align-items:flex-start;font-size:14px;color:var(--ink);font-weight:400;margin:6px 0}
+  .chk input{width:auto;margin-top:3px}
+  .pd-fotos{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .pd-fotos figure{margin:0;break-inside:avoid;border:1px solid #d9dfe6;border-radius:4px;overflow:hidden}
+  .pd-fotos img{width:100%;height:62mm;object-fit:cover;display:block}
+  .pd-fotos figcaption{font-size:8.5pt;color:#3a4755;padding:4px 6px}
   .doc-head .brand{display:flex;align-items:center;gap:12px}
   .doc-head .brand svg{flex:0 0 auto}
   header.top .logo{display:flex;align-items:center}
@@ -253,6 +264,39 @@
         <div id="summary"></div>
       </div>
     </div>
+
+    <!-- 6. Relatório -->
+    <div class="step" data-step="5">
+      <div class="card">
+        <h2>Relatório do serviço executado</h2>
+        <p class="hint">Depois de concluir o serviço, registre o que foi feito e anexe as fotos. Gera um relatório em PDF para mandar ao cliente.</p>
+        <div class="row">
+          <div><label for="r_data">Data de execução</label><input id="r_data" type="date" data-f="rel.data"></div>
+          <div><label for="r_tec">Técnico responsável</label><input id="r_tec" data-f="rel.tec" placeholder="Nome do técnico"></div>
+        </div>
+        <label>Serviços executados</label>
+        <div id="relServ"></div>
+        <label for="r_desc">Descrição do que foi feito</label>
+        <textarea id="r_desc" data-f="rel.desc" rows="4" placeholder="Ex.: Realizada limpeza das 8 câmeras, substituída a câmera da garagem, HD testado sem erros, acesso remoto configurado no celular do síndico."></textarea>
+        <label for="r_rec">Recomendações ao cliente</label>
+        <textarea id="r_rec" data-f="rel.rec" rows="2" placeholder="Opcional. Ex.: Trocar o nobreak do rack nos próximos 6 meses."></textarea>
+      </div>
+      <div class="card">
+        <h2>Fotos do serviço</h2>
+        <p class="hint">Tire na hora ou escolha da galeria. As fotos são reduzidas automaticamente e ficam guardadas só neste aparelho.</p>
+        <div id="fotoList" class="fotos"></div>
+        <label class="btn sec block" style="margin:6px 0 0;color:var(--ink)">📷 Adicionar fotos
+          <input type="file" accept="image/*" multiple hidden onchange="addFotos(this.files);this.value=''">
+        </label>
+      </div>
+      <div class="card">
+        <div style="display:grid;gap:10px">
+          <button class="btn block" onclick="gerarRelatorio()">📄 Gerar relatório em PDF</button>
+          <button class="btn wa block" onclick="avisarRelatorio()">📲 Avisar o cliente pelo WhatsApp</button>
+        </div>
+        <p class="hint" style="margin:10px 0 0">No celular, o PDF abre a tela de impressão: escolha <b>Salvar como PDF</b> e depois envie o arquivo pelo WhatsApp.</p>
+      </div>
+    </div>
   </main>
 
   <div class="bar">
@@ -401,7 +445,7 @@ async function decode(str){
 }
 
 /* ============ estado ============ */
-const STEPS = ['1 Cliente', '2 Serviços', '3 Materiais', '4 Pagamento', '5 Enviar'];
+const STEPS = ['1 Cliente', '2 Serviços', '3 Materiais', '4 Pagamento', '5 Enviar', '6 Relatório'];
 const SERV_SUG = [
   'Manutenção preventiva do sistema de CFTV (limpeza de câmeras, ajuste de foco e ângulo)',
   'Substituição de câmera com defeito',
@@ -445,7 +489,7 @@ const persist = () => LS.set('orc.draft', q);
 
 /* ============ editor ============ */
 function renderSteps(){
-  const done = [ !!(q.cli.nome && q.cli.wa), q.serv.some(s => s.d.trim()), q.mat.some(m => m.d.trim()) || num(q.mo) > 0, !!q.pag.trim(), false ];
+  const done = [ !!(q.cli.nome && q.cli.wa), q.serv.some(s => s.d.trim()), q.mat.some(m => m.d.trim()) || num(q.mo) > 0, !!q.pag.trim(), false, !!(q.rel?.fotos?.length || q.rel?.desc) ];
   $('#steps').innerHTML = STEPS.map((s,i) => `<button class="${i===cur?'on':''} ${done[i]?'ok':''}" onclick="go(${i})">${done[i]&&i!==cur?'✓ ':''}${s}</button>`).join('');
 }
 function go(i){
@@ -456,6 +500,7 @@ function go(i){
   $('#btnPrev').style.visibility = i === 0 ? 'hidden' : 'visible';
   $('#btnNext').classList.toggle('hidden', i === STEPS.length - 1);
   if (i === 4) renderSend();
+  if (i === 5) renderRel();
   renderSteps(); window.scrollTo({top:0, behavior:'smooth'});
 }
 function bindFields(){
@@ -607,13 +652,13 @@ function saveQuote(showToast, status){
 }
 function openSaved(){
   const all = LS.get('orc.quotes', []);
-  const tag = s => ({rascunho:'📝 rascunho', enviado:'📤 enviado', aprovado:'✅ aprovado', recusado:'❌ recusado'}[s] || s);
+  const tag = s => ({rascunho:'📝 rascunho', enviado:'📤 enviado', aprovado:'✅ aprovado', recusado:'❌ recusado', 'concluído':'🏁 concluído'}[s] || s);
   $('#savedList').innerHTML = all.length ? all.map(x => `
     <div class="list-q">
       <div><b>${esc(x.n)}</b> · ${esc(x.cli?.nome || 'sem cliente')}<small>${esc(x.data)} · ${brl(x.total)} · ${tag(x.status)}</small></div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
         <select onchange="setStatus('${x.id}',this.value)" style="width:auto;padding:6px 8px;font-size:13px">
-          ${['rascunho','enviado','aprovado','recusado'].map(s => `<option ${s===x.status?'selected':''} value="${s}">${s}</option>`).join('')}
+          ${['rascunho','enviado','aprovado','recusado','concluído'].map(s => `<option ${s===x.status?'selected':''} value="${s}">${s}</option>`).join('')}
         </select>
         <button class="btn sec" style="padding:7px 10px" onclick="loadQuote('${x.id}')">Abrir</button>
         <button class="btn sec" style="padding:7px 10px" title="Duplicar" onclick="dupQuote('${x.id}')">⧉</button>
@@ -626,10 +671,10 @@ function setStatus(id, s){ const all = LS.get('orc.quotes', []); const x = all.f
 function loadQuote(id){ const x = LS.get('orc.quotes', []).find(y => y.id === id); if (!x) return; q = structuredClone(x); persist(); startEditor(); dlgSaved.close(); }
 function dupQuote(id){
   const x = LS.get('orc.quotes', []).find(y => y.id === id); if (!x) return;
-  const b = blankQuote(); q = {...structuredClone(x), id:b.id, n:b.n, seq:b.seq, data:b.data, msg:'', status:undefined, _auto:true};
+  const b = blankQuote(); q = {...structuredClone(x), id:b.id, n:b.n, seq:b.seq, data:b.data, msg:'', status:undefined, rel:undefined, _auto:true};
   persist(); startEditor(); dlgSaved.close(); toast('Cópia criada: nº ' + q.n);
 }
-function delQuote(id){ if (!confirm('Excluir este orçamento?')) return; LS.set('orc.quotes', LS.get('orc.quotes', []).filter(y => y.id !== id)); openSaved(); }
+function delQuote(id){ if (!confirm('Excluir este orçamento?')) return; (LS.get('orc.quotes', []).find(y => y.id === id)?.rel?.fotos || []).forEach(f => fotoDel(f.id).catch(() => {})); LS.set('orc.quotes', LS.get('orc.quotes', []).filter(y => y.id !== id)); openSaved(); }
 function newQuote(){ if (q.cli.nome) saveQuote(false); q = blankQuote(); persist(); startEditor(); toast('Novo orçamento nº ' + q.n); }
 function openProfile(){ document.querySelectorAll('[data-p]').forEach(el => el.value = prof[el.dataset.p] ?? ''); dlgProfile.showModal(); }
 function saveProfile(){
@@ -758,7 +803,149 @@ function printHTML(p, x){
   <tfoot><tr><td><div style="height:16mm"></div></td></tr></tfoot></table>
   <div class="pd-foot"><div class="c">${contatos || '<span>Telefone · E-mail · Instagram</span>'}</div><div class="s">${esc(p.emp || '')}${p.doc ? ' · ' + esc(p.doc) : ''}</div></div>`;
 }
-function renderPrint(){ const d = viewData || { p: prof, q }; if (d.q) $('#printDoc').innerHTML = printHTML(d.p || {}, d.q); }
+/* ============ relatório do serviço executado (fotos no IndexedDB) ============ */
+const FOTO_DB = new Promise((ok, erro) => {
+  if (!('indexedDB' in window)) return erro(new Error('sem IndexedDB'));
+  const r = indexedDB.open('idl-fotos', 1);
+  r.onupgradeneeded = () => r.result.createObjectStore('fotos');
+  r.onsuccess = () => ok(r.result); r.onerror = () => erro(r.error);
+});
+FOTO_DB.catch(() => {});
+async function fotoTx(modo, fn){
+  const db = await FOTO_DB;
+  return new Promise((ok, erro) => { const t = db.transaction('fotos', modo); const req = fn(t.objectStore('fotos')); t.oncomplete = () => ok(req?.result); t.onerror = () => erro(t.error); });
+}
+const fotoGet = id => fotoTx('readonly', s => s.get(id));
+const fotoPut = (id, dataURL) => fotoTx('readwrite', s => s.put(dataURL, id));
+const fotoDel = id => fotoTx('readwrite', s => s.delete(id));
+
+function reduzirFoto(file, max = 1280){
+  return new Promise((ok, erro) => {
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => {
+      const k = Math.min(1, max / Math.max(img.width, img.height));
+      const cv = document.createElement('canvas'); cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k);
+      cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+      URL.revokeObjectURL(url); ok(cv.toDataURL('image/jpeg', 0.72));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); erro(new Error('imagem inválida')); };
+    img.src = url;
+  });
+}
+function relInit(){
+  q.rel ??= {};
+  q.rel.fotos ??= [];
+  q.rel.skip ??= [];
+  if (!q.rel.data) q.rel.data = new Date().toISOString().slice(0, 10);
+  if (!q.rel.tec) q.rel.tec = prof.resp || '';
+}
+async function renderRel(){
+  relInit(); persist();
+  $('#r_data').value = q.rel.data; $('#r_tec').value = q.rel.tec;
+  const servs = q.serv.map((s, i) => ({...s, i})).filter(s => s.d.trim());
+  $('#relServ').innerHTML = servs.length ? servs.map(s => `
+    <label class="chk"><input type="checkbox" ${q.rel.skip.includes(s.i) ? '' : 'checked'} onchange="toggleRelServ(${s.i}, this.checked)"> ${esc(s.d)}</label>`).join('')
+    : '<p class="hint">Nenhum serviço cadastrado no passo 2.</p>';
+  const imgs = await Promise.all(q.rel.fotos.map(f => fotoGet(f.id).catch(() => null)));
+  $('#fotoList').innerHTML = q.rel.fotos.map((f, i) => `
+    <div class="foto">${imgs[i] ? `<img src="${imgs[i]}" alt="">` : '<div style="height:120px;display:grid;place-items:center;color:var(--muted);font-size:13px">foto não encontrada</div>'}
+      <button class="x" onclick="delFoto(${i})" aria-label="Remover foto">×</button>
+      <input value="${esc(f.leg)}" placeholder="Legenda (ex.: câmera da garagem)" oninput="q.rel.fotos[${i}].leg=this.value;persist()">
+    </div>`).join('');
+}
+function toggleRelServ(i, on){ q.rel.skip = q.rel.skip.filter(x => x !== i); if (!on) q.rel.skip.push(i); persist(); }
+async function addFotos(files){
+  relInit();
+  let n = 0;
+  for (const f of files){
+    try{
+      const id = q.id + ':' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      await fotoPut(id, await reduzirFoto(f));
+      q.rel.fotos.push({ id, leg: '' }); n++;
+    }catch(e){ toast('Não consegui ler uma das fotos'); }
+  }
+  persist(); saveQuote(false); renderRel(); renderSteps();
+  if (n) toast(n === 1 ? 'Foto adicionada' : n + ' fotos adicionadas');
+}
+async function delFoto(i){
+  if (!confirm('Remover esta foto?')) return;
+  const [f] = q.rel.fotos.splice(i, 1);
+  fotoDel(f.id).catch(() => {}); persist(); saveQuote(false); renderRel(); renderSteps();
+}
+const dataBR = iso => iso ? iso.split('-').reverse().join('/') : '';
+
+function printRelHTML(p, x, imgs){
+  const c = x.cli || {}, r = x.rel || {};
+  const kv = (k,v) => v ? `<div><span>${k}:</span> ${esc(v)}</div>` : '';
+  const feitos = (x.serv||[]).map((s, i) => ({...s, i})).filter(s => s.d.trim() && !(r.skip||[]).includes(s.i));
+  const fotos = (r.fotos||[]).map((f, i) => ({...f, src: imgs[i]})).filter(f => f.src);
+  const insta = p.insta ? '@' + p.insta.replace(/^@/, '').replace(/^https?:\/\/(www\.)?instagram\.com\//, '').replace(/\/$/, '') : '';
+  const contatos = [
+    (p.tel || p.wa) && `<span>${ICON.tel}${esc(p.tel || p.wa)}</span>`,
+    p.email && `<span>${ICON.mail}${esc(p.email)}</span>`,
+    insta && `<span>${ICON.insta}${esc(insta)}</span>`
+  ].filter(Boolean).join('');
+  return `
+  <table class="pd-wrap"><tbody><tr><td>
+    <div class="pd-head">
+      <div><div class="pd-brand">${LOGO(52)}<div><div class="nm">${esc(p.emp || 'Sua empresa')}</div><div class="rm">${esc(p.ramo || '')}</div></div></div>
+        <div class="pd-slogan">${esc(slogan(p))}</div></div>
+      <div class="pd-title"><div class="t" style="font-size:14pt;letter-spacing:3px">RELATÓRIO TÉCNICO</div>
+        <div class="m">Serviço executado · Ref. orçamento nº <b>${esc(x.n)}</b></div><div class="m">Execução <b>${esc(dataBR(r.data))}</b></div></div>
+    </div>
+    <div class="pd-sec"><h5>Cliente</h5>
+      <div style="font-weight:600;font-size:11pt;margin-bottom:3px">${esc(c.nome || '')}</div>
+      <div class="pd-kv">${kv('Contato', c.contato)}${kv('Telefone', c.wa)}</div>
+      ${c.end ? `<div style="margin-top:3px"><span style="color:#5d6b79">Local do serviço:</span> ${esc(c.end)}</div>` : ''}
+    </div>
+    ${feitos.length ? `<div class="pd-sec"><h5>Serviços executados</h5><ol>${feitos.map(s => `<li>${esc(s.d.trim())}</li>`).join('')}</ol></div>` : ''}
+    ${r.desc ? `<div class="pd-sec"><h5>Descrição técnica</h5><div style="white-space:pre-wrap">${esc(r.desc)}</div></div>` : ''}
+    ${r.rec ? `<div class="pd-sec"><h5>Recomendações</h5><div style="white-space:pre-wrap">${esc(r.rec)}</div></div>` : ''}
+    ${fotos.length ? `<div class="pd-sec" style="break-inside:auto"><h5>Registro fotográfico</h5>
+      <div class="pd-fotos">${fotos.map((f, i) => `<figure><img src="${f.src}" alt=""><figcaption><b>Foto ${i+1}</b>${f.leg ? ' — ' + esc(f.leg) : ''}</figcaption></figure>`).join('')}</div></div>` : ''}
+    <p class="pd-close">Serviço concluído e testado. Permanecemos à disposição para quaisquer esclarecimentos que se fizerem necessários.</p>
+    <div class="pd-sign"><div>${esc(c.nome || 'Cliente')}<br>Recebido por</div><div>${esc(r.tec || p.resp || '')}${p.cargo ? ' — ' + esc(p.cargo) : ''}<br>${esc(p.emp || '')}</div></div>
+  </td></tr></tbody>
+  <tfoot><tr><td><div style="height:16mm"></div></td></tr></tfoot></table>
+  <div class="pd-foot"><div class="c">${contatos || '<span>Telefone · E-mail · Instagram</span>'}</div><div class="s">${esc(p.emp || '')}${p.doc ? ' · ' + esc(p.doc) : ''}</div></div>`;
+}
+let printMode = 'orc';
+async function montarRelatorio(){
+  const imgs = await Promise.all(q.rel.fotos.map(f => fotoGet(f.id).catch(() => null)));
+  $('#printDoc').innerHTML = printRelHTML(prof, q, imgs);
+  await Promise.all([...document.querySelectorAll('#printDoc img')].map(im => im.decode().catch(() => {})));
+}
+async function gerarRelatorio(){
+  relInit();
+  if (!q.rel.fotos.length && !q.rel.desc){ toast('Adicione fotos ou a descrição do serviço'); return; }
+  await montarRelatorio();
+  saveQuote(false, 'concluído');
+  printMode = 'rel';
+  const old = document.title;
+  document.title = `Relatorio ${q.n} - ${(q.cli?.nome || '').slice(0,40)}`;
+  window.print();
+  setTimeout(() => { document.title = old; printMode = 'orc'; }, 1000);
+}
+function avisarRelatorio(){
+  const to = phone(q.cli.wa);
+  if (!to){ toast('WhatsApp do cliente inválido'); return; }
+  relInit();
+  const saud = (q.cli.contato || q.cli.nome || '').split(' ')[0];
+  const assinatura = [prof.resp + (prof.cargo ? ' — ' + prof.cargo : ''), prof.emp].filter(Boolean).join(String.fromCharCode(10));
+  const msg = `Olá${saud ? ', ' + saud : ''}! Tudo bem?
+
+Informo que o serviço referente ao orçamento nº ${q.n} foi concluído em ${dataBR(q.rel.data)}.
+
+Segue o relatório técnico com a descrição do que foi realizado e o registro fotográfico.
+
+Fico à disposição para qualquer esclarecimento.
+
+Atenciosamente,
+${assinatura}`;
+  window.open(`https://wa.me/${to}?text=${encodeURIComponent(msg)}`, '_blank');
+}
+
+function renderPrint(){ if (printMode === 'rel') return; const d = viewData || { p: prof, q }; if (d.q) $('#printDoc').innerHTML = printHTML(d.p || {}, d.q); }
 function printPDF(){
   renderPrint();
   const old = document.title, d = viewData || { p: prof, q };
