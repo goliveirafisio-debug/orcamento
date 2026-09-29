@@ -203,6 +203,7 @@
 <div id="editor" class="hidden">
   <header class="top">
     <span class="logo" id="topLogo"></span><h1 id="topTitle">Novo orçamento</h1>
+    <button onclick="openCat()" title="Meu catálogo">📚</button>
     <button onclick="openSaved()" title="Orçamentos salvos">📂 Salvos</button>
     <button onclick="openProfile()" title="Meus dados">⚙️</button>
   </header>
@@ -234,17 +235,15 @@
     <div class="step" data-step="1">
       <div class="card">
         <h2>Serviços que serão realizados</h2>
-        <p class="hint">Descreva cada serviço. Toque numa sugestão para adicionar rápido.</p>
+        <p class="hint">Descreva cada serviço e o valor. A mão de obra do orçamento é a soma dos serviços.</p>
         <div id="servList"></div>
         <button class="btn sec block" onclick="addServ()">+ Adicionar serviço</button>
-        <label>Sugestões</label>
-        <div class="chips" id="servChips"></div>
+        <div class="sub" id="servTot" style="font-size:15px;margin-top:12px"></div>
       </div>
       <div class="card">
-        <h2>Mão de obra</h2>
-        <p class="hint">Valor dos serviços (sem os materiais). Deixe 0 se já estiver embutido.</p>
-        <label for="q_mo">Valor da mão de obra (R$)</label>
-        <input id="q_mo" data-f="mo" data-money inputmode="decimal" placeholder="0,00">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h2>Do meu catálogo</h2><button class="btn ghost" onclick="openCat('serv')">📚 Gerenciar</button></div>
+        <p class="hint" style="margin-bottom:4px">Toque para adicionar com descrição e valor prontos.</p>
+        <div class="chips" id="servChips"></div>
       </div>
     </div>
 
@@ -256,6 +255,11 @@
         <div id="matList"></div>
         <button class="btn sec block" onclick="addMat()">+ Adicionar material</button>
         <div class="totals" id="totBox"></div>
+      </div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h2>Do meu catálogo</h2><button class="btn ghost" onclick="openCat('mat')">📚 Gerenciar</button></div>
+        <p class="hint" style="margin-bottom:4px">Toque para adicionar com unidade e valor prontos.</p>
+        <div class="chips" id="matChips"></div>
       </div>
     </div>
 
@@ -390,6 +394,19 @@
   <div class="df" style="justify-content:space-between"><span style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sec" onclick="trocarSenha()">🔒 Trocar senha</button><button class="btn sec" onclick="novoCodigoRecuperacao()">🔑 Novo código</button></span><button class="btn" onclick="saveProfile()">Salvar</button></div>
 </dialog>
 
+<!-- Catálogo -->
+<dialog id="dlgCat">
+  <div class="dh"><h3>📚 Meu catálogo</h3><button class="btn ghost" onclick="dlgCat.close()">✕</button></div>
+  <div class="db">
+    <p style="color:var(--muted);font-size:14px;margin:6px 0 10px">Cadastre seus serviços e materiais com os preços de sempre. Ao montar um orçamento, é só tocar para adicionar. Mudar o catálogo não altera orçamentos já feitos.</p>
+    <div class="steps" id="catAbas" style="padding:0 0 10px">
+      <button data-aba="serv" onclick="catAba='serv';renderCatDlg()">Serviços</button>
+      <button data-aba="mat" onclick="catAba='mat';renderCatDlg()">Materiais</button>
+    </div>
+    <div id="catLista"></div>
+  </div>
+</dialog>
+
 <!-- Salvos -->
 <dialog id="dlgSaved">
   <div class="dh"><h3>Orçamentos salvos</h3><button class="btn ghost" onclick="dlgSaved.close()">✕</button></div>
@@ -446,7 +463,7 @@ const ICON = {
 const $ = s => document.querySelector(s);
 // Armazenamento: chaves comuns vão direto ao localStorage; as protegidas ficam em memória
 // depois do desbloqueio e são gravadas no disco sempre criptografadas (AES-GCM).
-const PROTEGIDAS = ['orc.prof', 'orc.draft', 'orc.quotes'];
+const PROTEGIDAS = ['orc.prof', 'orc.draft', 'orc.quotes', 'orc.cat'];
 const MEM = new Map(), PENDENTES = new Set();
 let DADOS_KEY = null, timerGravar = null;
 const LS_raw = {
@@ -563,13 +580,13 @@ function blankQuote(){
     id: Date.now().toString(36),
     n: new Date().getFullYear() + '-' + String(cnt).padStart(3, '0'),
     seq: cnt, data: today(),
-    cli: {}, serv: [{d:''}], mat: [{d:'', q:1, u:'un', v:''}],
+    cli: {}, serv: [{d:'', v:''}], mat: [{d:'', q:1, u:'un', v:''}],
     mo: '', desc: '', pag: '', val: '15', prazo: '', gar: '', obs: '', msg: ''
   };
 }
 function calc(x = q){
   const mat = (x.mat||[]).reduce((s,m) => s + num(m.q) * num(m.v), 0);
-  const mo = num(x.mo), desc = num(x.desc);
+  const mo = (x.serv||[]).reduce((s,v) => s + num(v.v), 0) + num(x.mo), desc = num(x.desc);
   return { mat, mo, desc, total: Math.max(0, mat + mo - desc) };
 }
 const getF = (path, o = q) => path.split('.').reduce((a,k) => a?.[k], o);
@@ -605,15 +622,20 @@ function renderServ(){
     <div class="item"><div class="num">Serviço ${i+1}</div>
       <button class="x" onclick="delServ(${i})" aria-label="Remover">×</button>
       <textarea rows="2" oninput="q.serv[${i}].d=this.value;persist();renderSteps()" placeholder="Descreva o serviço">${esc(s.d)}</textarea>
+      <div style="display:flex;gap:10px;align-items:flex-end;margin-top:8px">
+        <div style="flex:1"><label style="margin-top:0">Valor (R$)</label><input value="${esc(s.v ?? '')}" inputmode="decimal" placeholder="0,00" oninput="q.serv[${i}].v=this.value;persist();renderTotals()"></div>
+        <button class="btn sec" style="padding:11px 12px" title="Guardar no catálogo" onclick="servParaCat(${i})">⭐</button>
+      </div>
     </div>`).join('');
+  renderTotals();
 }
 function addServ(txt = ''){
   const empty = q.serv.findIndex(s => !s.d.trim());
-  if (txt && empty >= 0) q.serv[empty].d = txt; else q.serv.push({d: txt});
+  if (txt && empty >= 0) q.serv[empty].d = txt; else q.serv.push({d: txt, v: ''});
   persist(); renderServ(); renderSteps();
   if (!txt) document.querySelectorAll('#servList textarea')[q.serv.length-1].focus();
 }
-function delServ(i){ q.serv.splice(i,1); if (!q.serv.length) q.serv.push({d:''}); persist(); renderServ(); renderSteps(); }
+function delServ(i){ q.serv.splice(i,1); if (!q.serv.length) q.serv.push({d:'', v:''}); persist(); renderServ(); renderSteps(); }
 
 function renderMat(){
   $('#matList').innerHTML = q.mat.map((m,i) => `
@@ -625,7 +647,10 @@ function renderMat(){
         <div><label>Unid.</label><input value="${esc(m.u)}" placeholder="un, m, cx" oninput="q.mat[${i}].u=this.value;persist()"></div>
         <div><label>Valor unit. (R$)</label><input value="${esc(m.v)}" inputmode="decimal" placeholder="0,00" oninput="q.mat[${i}].v=this.value;upMat(${i})"></div>
       </div>
-      <div class="sub" id="sub${i}">Subtotal: <b>${brl(num(m.q)*num(m.v))}</b></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+        <button class="btn ghost" style="padding:4px 0;font-size:14px" onclick="matParaCat(${i})">⭐ Guardar no catálogo</button>
+        <div class="sub" id="sub${i}" style="margin-top:0">Subtotal: <b>${brl(num(m.q)*num(m.v))}</b></div>
+      </div>
     </div>`).join('');
   renderTotals();
 }
@@ -637,9 +662,10 @@ function renderTotals(){
   const t = calc();
   $('#totBox').innerHTML = `
     <div><span>Materiais</span><b>${brl(t.mat)}</b></div>
-    <div><span>Mão de obra</span><b>${brl(t.mo)}</b></div>
+    <div><span>Serviços (mão de obra)</span><b>${brl(t.mo)}</b></div>
     ${t.desc ? `<div><span>Desconto</span><b>− ${brl(t.desc)}</b></div>` : ''}
     <div class="grand"><span>Total</span><span>${brl(t.total)}</span></div>`;
+  $('#servTot').innerHTML = `Total dos serviços (mão de obra): <b>${brl(t.mo)}</b>`;
   $('#barTot').textContent = brl(t.total);
 }
 
@@ -693,10 +719,10 @@ function resetMsg(){ q.msg = ''; q._auto = true; renderSend(); }
 function textQuote(){
   const t = calc(); const L = [];
   L.push(`*ORÇAMENTO Nº ${q.n}* — ${q.data}`, `${prof.emp || ''}`, '');
-  L.push('*Serviços:*'); q.serv.filter(s => s.d.trim()).forEach((s,i) => L.push(`${i+1}. ${s.d.trim()}`));
+  L.push('*Serviços:*'); q.serv.filter(s => s.d.trim()).forEach((s,i) => L.push(`${i+1}. ${s.d.trim()}${num(s.v) ? ' — ' + brl(num(s.v)) : ''}`));
   const mats = q.mat.filter(m => m.d.trim());
   if (mats.length){ L.push('', '*Materiais:*'); mats.forEach(m => L.push(`• ${m.d.trim()} — ${num(m.q)} ${m.u||''} × ${brl(num(m.v))} = ${brl(num(m.q)*num(m.v))}`)); }
-  L.push('', `Materiais: ${brl(t.mat)}`, `Mão de obra: ${brl(t.mo)}`); if (t.desc) L.push(`Desconto: − ${brl(t.desc)}`);
+  L.push('', `Serviços: ${brl(t.mo)}`, `Materiais: ${brl(t.mat)}`); if (t.desc) L.push(`Desconto: − ${brl(t.desc)}`);
   L.push(`*TOTAL: ${brl(t.total)}*`, '');
   if (q.pag) L.push(`*Pagamento:* ${q.pag}`);
   if (q.prazo) L.push(`*Prazo:* ${q.prazo}`);
@@ -724,10 +750,89 @@ function renderSummary(){
       <div><span>Cliente</span><b>${esc(q.cli.nome||'—')}</b></div>
       <div><span>Serviços</span><b>${q.serv.filter(s=>s.d.trim()).length}</b></div>
       <div><span>Materiais</span><b>${brl(t.mat)}</b></div>
-      <div><span>Mão de obra</span><b>${brl(t.mo)}</b></div>
+      <div><span>Serviços (mão de obra)</span><b>${brl(t.mo)}</b></div>
       ${t.desc?`<div><span>Desconto</span><b>− ${brl(t.desc)}</b></div>`:''}
       <div class="grand"><span>Total</span><span>${brl(t.total)}</span></div>
     </div>`;
+}
+
+/* ============ catálogo de serviços e materiais ============ */
+const novoId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+function getCat(){
+  const c = LS.get('orc.cat', null);
+  if (c) return c;
+  return { serv: SERV_SUG.map(d => ({ id: novoId(), d, v: '' })), mat: [] };
+}
+const setCat = c => LS.set('orc.cat', c);
+const curto = (s, n = 38) => s.length > n ? s.slice(0, n - 2) + '…' : s;
+const precoTxt = v => num(v) ? ' — ' + brl(num(v)) : '';
+
+function renderCatChips(){
+  const c = getCat();
+  $('#servChips').innerHTML = c.serv.length
+    ? c.serv.map(s => `<button onclick="addServCat('${s.id}')">+ ${esc(curto(s.d))}${esc(precoTxt(s.v))}</button>`).join('')
+    : '<span class="hint" style="font-size:13px;color:var(--muted)">Catálogo vazio. Toque em 📚 Catálogo para cadastrar.</span>';
+  $('#matChips').innerHTML = c.mat.length
+    ? c.mat.map(m => `<button onclick="addMatCat('${m.id}')">+ ${esc(curto(m.d))}${esc(precoTxt(m.v))}</button>`).join('')
+    : '<span class="hint" style="font-size:13px;color:var(--muted)">Nenhum material no catálogo ainda. Use ⭐ num material para guardá-lo.</span>';
+}
+function addServCat(id){
+  const s = getCat().serv.find(x => x.id === id); if (!s) return;
+  const vazio = q.serv.findIndex(x => !x.d.trim() && !num(x.v));
+  const item = { d: s.d, v: s.v || '' };
+  if (vazio >= 0) q.serv[vazio] = item; else q.serv.push(item);
+  persist(); renderServ(); renderSteps(); toast('Serviço adicionado');
+}
+function addMatCat(id){
+  const m = getCat().mat.find(x => x.id === id); if (!m) return;
+  const vazio = q.mat.findIndex(x => !x.d.trim() && !num(x.v));
+  const item = { d: m.d, q: 1, u: m.u || 'un', v: m.v || '' };
+  if (vazio >= 0) q.mat[vazio] = item; else q.mat.push(item);
+  persist(); renderMat(); renderSteps(); toast('Material adicionado');
+}
+function servParaCat(i){
+  const s = q.serv[i]; if (!s.d.trim()){ toast('Descreva o serviço primeiro'); return; }
+  const c = getCat(), igual = c.serv.find(x => x.d.trim().toLowerCase() === s.d.trim().toLowerCase());
+  if (igual) igual.v = s.v || igual.v; else c.serv.push({ id: novoId(), d: s.d.trim(), v: s.v || '' });
+  setCat(c); renderCatChips(); toast(igual ? 'Preço atualizado no catálogo' : 'Salvo no catálogo');
+}
+function matParaCat(i){
+  const m = q.mat[i]; if (!m.d.trim()){ toast('Descreva o material primeiro'); return; }
+  const c = getCat(), igual = c.mat.find(x => x.d.trim().toLowerCase() === m.d.trim().toLowerCase());
+  if (igual){ igual.v = m.v || igual.v; igual.u = m.u || igual.u; } else c.mat.push({ id: novoId(), d: m.d.trim(), u: m.u || 'un', v: m.v || '' });
+  setCat(c); renderCatChips(); toast(igual ? 'Preço atualizado no catálogo' : 'Salvo no catálogo');
+}
+
+// ---- tela de gerenciamento ----
+let catAba = 'serv';
+function openCat(aba){ if (aba) catAba = aba; renderCatDlg(); dlgCat.showModal(); }
+function renderCatDlg(){
+  const c = getCat(), lista = c[catAba];
+  document.querySelectorAll('#catAbas button').forEach(b => b.classList.toggle('on', b.dataset.aba === catAba));
+  $('#catLista').innerHTML = (lista.length ? lista.map(x => `
+    <div class="item">
+      <button class="x" onclick="delCat('${x.id}')" aria-label="Remover">×</button>
+      <label style="margin-top:0">Descrição</label>
+      <textarea rows="2" oninput="upCat('${x.id}','d',this.value)">${esc(x.d)}</textarea>
+      <div class="${catAba === 'mat' ? 'mat-grid' : ''}" style="${catAba === 'mat' ? 'grid-template-columns:90px 1fr' : ''}">
+        ${catAba === 'mat' ? `<div><label>Unid.</label><input value="${esc(x.u || '')}" placeholder="un, m, cx" oninput="upCat('${x.id}','u',this.value)"></div>` : ''}
+        <div><label>${catAba === 'mat' ? 'Valor unit.' : 'Valor'} (R$)</label><input value="${esc(x.v || '')}" inputmode="decimal" placeholder="0,00" oninput="upCat('${x.id}','v',this.value)"></div>
+      </div>
+    </div>`).join('') : `<p class="hint" style="color:var(--muted)">Nenhum ${catAba === 'mat' ? 'material' : 'serviço'} cadastrado.</p>`)
+    + `<button class="btn sec block" onclick="novoCat()">+ Novo ${catAba === 'mat' ? 'material' : 'serviço'}</button>`;
+}
+function upCat(id, campo, valor){
+  const c = getCat(), x = c[catAba].find(y => y.id === id); if (!x) return;
+  x[campo] = valor; setCat(c); renderCatChips();
+}
+function delCat(id){
+  if (!confirm('Remover este item do catálogo? (Os orçamentos já feitos não mudam.)')) return;
+  const c = getCat(); c[catAba] = c[catAba].filter(y => y.id !== id); setCat(c); renderCatDlg(); renderCatChips();
+}
+function novoCat(){
+  const c = getCat(); c[catAba].push(catAba === 'mat' ? { id: novoId(), d: '', u: 'un', v: '' } : { id: novoId(), d: '', v: '' });
+  setCat(c); renderCatDlg();
+  const ts = document.querySelectorAll('#catLista textarea'); ts[ts.length - 1]?.focus();
 }
 
 /* ============ salvos / perfil ============ */
@@ -791,7 +896,10 @@ function docHTML(p, x, clientMode){
       <div><b>${esc(c.nome || '')}</b></div>
       ${line('CPF/CNPJ', c.doc)}${line('Contato', c.contato)}${line('Endereço', c.end)}${line('WhatsApp', c.wa)}${line('E-mail', c.email)}
     </section>
-    ${servs.length ? `<section><h4>Serviços a realizar</h4><ol>${servs.map(s => `<li class="pre">${esc(s.d.trim())}</li>`).join('')}</ol></section>` : ''}
+    ${servs.length ? `<section><h4>Serviços a realizar</h4>
+      <table><thead><tr><th>Descrição</th><th class="n">Valor</th></tr></thead>
+      <tbody>${servs.map(s => `<tr><td class="pre">${esc(s.d.trim())}</td><td class="n">${num(s.v) ? brl(num(s.v)) : '—'}</td></tr>`).join('')}</tbody></table>
+    </section>` : ''}
     ${mats.length ? `<section><h4>Materiais</h4>
       <table><thead><tr><th>Descrição</th><th class="n">Qtd.</th><th class="n">Unit.</th><th class="n">Total</th></tr></thead>
       <tbody>${mats.map(m => `<tr><td>${esc(m.d)}</td><td class="n">${num(m.q).toLocaleString('pt-BR')} ${esc(m.u||'')}</td><td class="n">${brl(num(m.v))}</td><td class="n">${brl(num(m.q)*num(m.v))}</td></tr>`).join('')}</tbody></table>
@@ -799,7 +907,7 @@ function docHTML(p, x, clientMode){
     <section><h4>Valores</h4>
       <div class="totals" style="border:0;margin:0;padding:0">
         <div><span>Materiais</span><b>${brl(t.mat)}</b></div>
-        <div><span>Mão de obra</span><b>${brl(t.mo)}</b></div>
+        <div><span>Serviços (mão de obra)</span><b>${brl(t.mo)}</b></div>
         ${t.desc ? `<div><span>Desconto</span><b>− ${brl(t.desc)}</b></div>` : ''}
         <div class="grand"><span>Total</span><span>${brl(t.total)}</span></div>
       </div>
@@ -874,13 +982,15 @@ function printHTML(p, x){
       <div class="pd-kv">${kv('CPF/CNPJ', c.doc)}${kv('Contato', c.contato)}${kv('Telefone', c.wa)}${kv('E-mail', c.email)}</div>
       ${c.end ? `<div style="margin-top:3px"><span style="color:#5d6b79">Local do serviço:</span> ${esc(c.end)}</div>` : ''}
     </div>
-    ${servs.length ? `<div class="pd-sec"><h5>Escopo dos serviços</h5><ol>${servs.map(s => `<li>${esc(s.d.trim())}</li>`).join('')}</ol></div>` : ''}
+    ${servs.length ? `<div class="pd-sec"><h5>Escopo dos serviços</h5>
+      <table class="pd-tbl"><thead><tr><th style="width:38px">Item</th><th>Descrição</th><th class="n">Valor</th></tr></thead>
+      <tbody>${servs.map((s,i) => `<tr><td>${String(i+1).padStart(2,'0')}</td><td style="white-space:pre-wrap">${esc(s.d.trim())}</td><td class="n">${num(s.v) ? brl(num(s.v)) : '—'}</td></tr>`).join('')}</tbody></table></div>` : ''}
     ${mats.length ? `<div class="pd-sec"><h5>Materiais</h5>
       <table class="pd-tbl"><thead><tr><th style="width:38px">Item</th><th>Descrição</th><th class="n">Qtd.</th><th class="n">Valor unit.</th><th class="n">Total</th></tr></thead>
       <tbody>${mats.map((m,i) => `<tr><td>${String(i+1).padStart(2,'0')}</td><td>${esc(m.d)}</td><td class="n">${num(m.q).toLocaleString('pt-BR')} ${esc(m.u||'')}</td><td class="n">${brl(num(m.v))}</td><td class="n">${brl(num(m.q)*num(m.v))}</td></tr>`).join('')}</tbody></table></div>` : ''}
     <table class="pd-tot">
       <tr><td>Materiais</td><td>${brl(t.mat)}</td></tr>
-      <tr><td>Mão de obra</td><td>${brl(t.mo)}</td></tr>
+      <tr><td>Serviços (mão de obra)</td><td>${brl(t.mo)}</td></tr>
       ${t.desc ? `<tr><td>Desconto</td><td>− ${brl(t.desc)}</td></tr>` : ''}
       <tr class="g"><td>VALOR TOTAL</td><td>${brl(t.total)}</td></tr>
     </table>
@@ -1267,7 +1377,6 @@ function startEditor(){
   $('#topLogo').innerHTML = LOGO(32);
   if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
   const fav = document.createElement('link'); fav.rel = 'icon'; fav.href = 'data:image/svg+xml,' + encodeURIComponent(LOGO(64)); document.head.appendChild(fav);
-  $('#servChips').innerHTML = SERV_SUG.map((s,i) => `<button onclick="addServ(SERV_SUG[${i}])">+ ${esc(s.length > 42 ? s.slice(0,40) + '…' : s)}</button>`).join('');
   $('#pagChips').innerHTML = PAG_SUG.map((s,i) => `<button onclick="q.pag=PAG_SUG[${i}];$('#q_pag').value=q.pag;persist();renderSteps()">${esc(s)}</button>`).join('');
   const h = location.hash;
   if (h.startsWith('#o=')){
@@ -1278,6 +1387,7 @@ function startEditor(){
   $('#lockLogo').innerHTML = LOGO(64); $('#lockEmp').textContent = prof.emp || '';
   exigirSenha(() => {
     prof = { ...PROF_PADRAO, ...LS.get('orc.prof', {}) };
+    renderCatChips();
     q = LS.get('orc.draft', null) || blankQuote();
     startEditor();
     if (!prof.resp) setTimeout(openProfile, 300);
