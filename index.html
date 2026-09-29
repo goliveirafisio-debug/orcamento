@@ -104,6 +104,14 @@
   .pd-fotos figure{margin:0;break-inside:avoid;border:1px solid #d9dfe6;border-radius:4px;overflow:hidden}
   .pd-fotos img{width:100%;height:62mm;object-fit:cover;display:block}
   .pd-fotos figcaption{font-size:8.5pt;color:#3a4755;padding:4px 6px}
+  #lock{position:fixed;inset:0;z-index:50;background:linear-gradient(160deg,#16324b,#0f2233 55%,#0a1724);display:grid;place-items:center;padding:24px 16px}
+  .lock-box{background:#fff;border-radius:18px;padding:24px 20px;width:100%;max-width:360px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.35)}
+  .lock-box h2{font-size:19px;margin:14px 0 4px}
+  .lock-box p{color:var(--muted);font-size:14px;margin:0 0 6px}
+  .lock-box label{text-align:left}
+  .lock-box input{font-size:18px;letter-spacing:2px;text-align:center}
+  .lock-emp{font-size:13px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--brand);margin-top:8px}
+  #lockMsg{color:var(--danger);font-size:14px;min-height:20px;margin:10px 0 4px}
   .doc-head .brand{display:flex;align-items:center;gap:12px}
   .doc-head .brand svg{flex:0 0 auto}
   header.top .logo{display:flex;align-items:center}
@@ -156,6 +164,22 @@
 </style>
 </head>
 <body>
+
+<!-- Bloqueio por senha -->
+<div id="lock" class="hidden" role="dialog" aria-modal="true" aria-labelledby="lockTitulo">
+  <form class="lock-box" onsubmit="event.preventDefault();lockEnviar()">
+    <div id="lockLogo"></div>
+    <div class="lock-emp" id="lockEmp"></div>
+    <h2 id="lockTitulo"></h2>
+    <p id="lockTexto"></p>
+    <div><label for="lockSenha">Senha</label><input id="lockSenha" type="password" autocomplete="current-password" required></div>
+    <div><label for="lockConf">Repita a senha</label><input id="lockConf" type="password" autocomplete="new-password"></div>
+    <div id="lockMsg" role="alert"></div>
+    <button class="btn block" id="lockBtn" type="submit">Entrar</button>
+    <button class="btn ghost" id="lockCancelar" type="button" onclick="aoDesbloquear=null;esconderLock()">Cancelar</button>
+    <button class="btn ghost" id="lockEsqueci" type="button" onclick="lockEsqueci()">Esqueci a senha</button>
+  </form>
+</div>
 
 <!-- ================= EDITOR ================= -->
 <div id="editor" class="hidden">
@@ -345,7 +369,7 @@
     <input id="p_url" data-p="url" inputmode="url" placeholder="https://seuusuario.github.io/orcamento/">
     <p style="font-size:12px;color:var(--muted);margin:6px 0 0">Se o app já estiver aberto num endereço https, deixe em branco que ele usa o endereço atual.</p>
   </div>
-  <div class="df"><button class="btn" onclick="saveProfile()">Salvar</button></div>
+  <div class="df" style="justify-content:space-between"><button class="btn sec" onclick="trocarSenha()">🔒 Trocar senha</button><button class="btn" onclick="saveProfile()">Salvar</button></div>
 </dialog>
 
 <!-- Salvos -->
@@ -957,6 +981,83 @@ window.addEventListener('beforeprint', renderPrint);
 function preview(){ showDoc(prof, q, true); $('#backEdit').classList.remove('hidden'); }
 function closePreview(){ viewData = null; $('#viewer').classList.add('hidden'); $('#editor').classList.remove('hidden'); document.title = 'IDL Orçamentos'; }
 
+/* ============ senha de acesso (bloqueio do app) ============ */
+// A senha nunca é guardada: fica só um hash PBKDF2 com sal, no aparelho.
+const LOCK_KEY = 'orc.lock', LOCK_ITER = 150000, LOCK_APOS_MS = 2 * 60 * 1000;
+let lockSaiu = 0, lockErros = 0, lockAte = 0, lockModo = 'entrar', aoDesbloquear = null;
+const hex = buf => [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+async function hashSenha(senha, saltHex, iter = LOCK_ITER){
+  const salt = Uint8Array.from(saltHex.match(/../g).map(h => parseInt(h, 16)));
+  const chave = await crypto.subtle.importKey('raw', new TextEncoder().encode(senha), 'PBKDF2', false, ['deriveBits']);
+  return hex(await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations: iter }, chave, 256));
+}
+function mostrarLock(modo){
+  lockModo = modo;
+  const criar = modo === 'criar' || modo === 'trocar';
+  $('#lockTitulo').textContent = modo === 'trocar' ? 'Nova senha de acesso' : criar ? 'Crie sua senha de acesso' : 'Digite sua senha';
+  $('#lockTexto').textContent = criar
+    ? 'Ela protege seus orçamentos, clientes e fotos neste aparelho. Use pelo menos 4 caracteres (pode ser só números).'
+    : 'Seus orçamentos estão protegidos.';
+  $('#lockConf').parentElement.classList.toggle('hidden', !criar);
+  $('#lockEsqueci').classList.toggle('hidden', criar);
+  $('#lockCancelar').classList.toggle('hidden', modo !== 'trocar');
+  $('#lockBtn').textContent = criar ? 'Salvar senha' : 'Entrar';
+  $('#lockSenha').value = ''; $('#lockConf').value = ''; $('#lockMsg').textContent = '';
+  $('#lock').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => $('#lockSenha').focus(), 50);
+}
+function esconderLock(){ $('#lock').classList.add('hidden'); document.body.style.overflow = ''; }
+async function lockEnviar(){
+  const senha = $('#lockSenha').value, msg = $('#lockMsg');
+  if (lockModo === 'criar' || lockModo === 'trocar'){
+    if (senha.length < 4){ msg.textContent = 'Use pelo menos 4 caracteres.'; return; }
+    if (senha !== $('#lockConf').value){ msg.textContent = 'As duas senhas não conferem.'; return; }
+    const salt = hex(crypto.getRandomValues(new Uint8Array(16)));
+    LS.set(LOCK_KEY, { salt, iter: LOCK_ITER, hash: await hashSenha(senha, salt) });
+    esconderLock(); toast(lockModo === 'trocar' ? 'Senha alterada' : 'Senha criada');
+  } else {
+    if (Date.now() < lockAte){ msg.textContent = `Muitas tentativas. Aguarde ${Math.ceil((lockAte - Date.now()) / 1000)} s.`; return; }
+    const l = LS.get(LOCK_KEY, null);
+    if (l && await hashSenha(senha, l.salt, l.iter) === l.hash){ lockErros = 0; esconderLock(); }
+    else {
+      lockErros++; $('#lockSenha').value = '';
+      if (lockErros >= 5){ lockAte = Date.now() + 30000 * (lockErros - 4); msg.textContent = 'Senha incorreta. Aguarde 30 s para tentar de novo.'; }
+      else msg.textContent = 'Senha incorreta.';
+      return;
+    }
+  }
+  const f = aoDesbloquear; aoDesbloquear = null; if (f) f();
+}
+function lockEsqueci(){
+  if (!confirm('Sem a senha não há como recuperar os dados.\n\nPara criar uma senha nova, TODOS os orçamentos, clientes e fotos deste aparelho serão apagados. Continuar?')) return;
+  if (prompt('Para confirmar, digite APAGAR') !== 'APAGAR') return;
+  try { Object.keys(localStorage).filter(k => k.startsWith('orc.')).forEach(k => localStorage.removeItem(k)); } catch(e){}
+  try { indexedDB.deleteDatabase('idl-fotos'); } catch(e){}
+  location.reload();
+}
+function trocarSenha(){
+  dlgProfile.close();
+  aoDesbloquear = () => mostrarLock('trocar');
+  mostrarLock('entrar');
+  $('#lockTitulo').textContent = 'Digite a senha atual';
+  $('#lockCancelar').classList.remove('hidden');
+  $('#lockEsqueci').classList.add('hidden');
+}
+function exigirSenha(depois){
+  aoDesbloquear = depois;
+  mostrarLock(LS.get(LOCK_KEY, null) ? 'entrar' : 'criar');
+}
+// Bloqueia de novo quando o app fica em segundo plano por mais de 2 minutos
+document.addEventListener('visibilitychange', () => {
+  if (location.hash.startsWith('#o=') || !LS.get(LOCK_KEY, null)) return;
+  if (document.hidden) lockSaiu = Date.now();
+  else if (lockSaiu && Date.now() - lockSaiu > LOCK_APOS_MS && $('#lock').classList.contains('hidden')){
+    document.querySelectorAll('dialog[open]').forEach(d => d.close());
+    mostrarLock('entrar');
+  }
+});
+
 /* ============ inicialização ============ */
 function startEditor(){
   $('#viewer').classList.add('hidden'); $('#editor').classList.remove('hidden');
@@ -974,9 +1075,12 @@ function startEditor(){
     catch(e){ $('#viewer').classList.remove('hidden'); $('#viewMain').innerHTML = '<div class="card"><h2>Link inválido</h2><p class="hint">Este link de orçamento está incompleto. Peça ao prestador para enviar novamente.</p></div>'; }
     return;
   }
-  q = LS.get('orc.draft', null) || blankQuote();
-  startEditor();
-  if (!prof.resp) setTimeout(openProfile, 300);
+  $('#lockLogo').innerHTML = LOGO(64); $('#lockEmp').textContent = prof.emp || '';
+  exigirSenha(() => {
+    q = LS.get('orc.draft', null) || blankQuote();
+    startEditor();
+    if (!prof.resp) setTimeout(openProfile, 300);
+  });
 })();
 </script>
 </body>
