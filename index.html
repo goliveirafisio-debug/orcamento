@@ -315,7 +315,7 @@
 function LOGO(size = 44, dark = false){
   const a = dark ? '#ffffff' : '#0f2233', b = dark ? '#5fd3c1' : '#0e9f8a', bg = dark ? '#0f2233' : '#ffffff';
   return `<svg width="${size}" height="${size}" viewBox="0 0 64 64" role="img" aria-label="Logo" xmlns="http://www.w3.org/2000/svg">
-    <rect x="1.5" y="1.5" width="61" height="61" rx="14" fill="none" stroke="${a}" stroke-width="3"/>
+    <rect x="1.5" y="1.5" width="61" height="61" rx="14" fill="${bg}" stroke="${a}" stroke-width="3"/>
     <rect x="11" y="16" width="5" height="26" rx="2" fill="${a}"/>
     <path d="M16 29 h7" stroke="${a}" stroke-width="4" stroke-linecap="round"/>
     <g transform="rotate(14 36 26)">
@@ -635,7 +635,7 @@ function docHTML(p, x, clientMode){
   return `
   <div class="doc">
     <div class="doc-head">
-      <div class="brand">${LOGO(46, true)}<div><div class="emp">${esc(p.emp || 'Prestador')}</div>
+      <div class="brand">${LOGO(48)}<div><div class="emp">${esc(p.emp || 'Prestador')}</div>
       <div class="meta" style="margin-top:0">${esc(p.ramo || '')}${p.doc ? ' · ' + esc(p.doc) : ''}</div></div></div>
       <div class="meta">${esc(p.resp || '')}${p.wa ? ' · WhatsApp ' + esc(p.wa) : ''}${p.email ? ' · ' + esc(p.email) : ''}</div>
       <div class="tag">Orçamento nº ${esc(x.n)} · ${esc(x.data)}${x.val ? ' · válido até ' + addDays(x.data, x.val) : ''}</div>
@@ -762,7 +762,7 @@ function startEditor(){
   bindFields(); renderServ(); renderMat(); go(0);
 }
 (async function init(){
-  $('#topLogo').innerHTML = LOGO(30, true);
+  $('#topLogo').innerHTML = LOGO(32);
   const fav = document.createElement('link'); fav.rel = 'icon'; fav.href = 'data:image/svg+xml,' + encodeURIComponent(LOGO(64)); document.head.appendChild(fav);
   $('#servChips').innerHTML = SERV_SUG.map((s,i) => `<button onclick="addServ(SERV_SUG[${i}])">+ ${esc(s.length > 42 ? s.slice(0,40) + '…' : s)}</button>`).join('');
   $('#pagChips').innerHTML = PAG_SUG.map((s,i) => `<button onclick="q.pag=PAG_SUG[${i}];$('#q_pag').value=q.pag;persist();renderSteps()">${esc(s)}</button>`).join('');
