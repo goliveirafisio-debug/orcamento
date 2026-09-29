@@ -311,22 +311,19 @@
 <div id="printDoc"></div>
 
 <script>
-/* ============ logo (câmera de monitoramento) ============ */
+/* ============ logo IDL (D em forma de lente + sinal) ============ */
 function LOGO(size = 44, dark = false){
   const a = dark ? '#ffffff' : '#0f2233', b = dark ? '#5fd3c1' : '#0e9f8a', bg = dark ? '#0f2233' : '#ffffff';
-  return `<svg width="${size}" height="${size}" viewBox="0 0 64 64" role="img" aria-label="Logo" xmlns="http://www.w3.org/2000/svg">
+  return `<svg width="${size}" height="${size}" viewBox="0 0 64 64" role="img" aria-label="Logo IDL" xmlns="http://www.w3.org/2000/svg">
     <rect x="1.5" y="1.5" width="61" height="61" rx="14" fill="${bg}" stroke="${a}" stroke-width="3"/>
-    <rect x="11" y="16" width="5" height="26" rx="2" fill="${a}"/>
-    <path d="M16 29 h7" stroke="${a}" stroke-width="4" stroke-linecap="round"/>
-    <g transform="rotate(14 36 26)">
-      <rect x="21" y="18" width="30" height="15" rx="4" fill="${a}"/>
-      <rect x="49" y="20" width="5" height="11" rx="1.5" fill="${a}"/>
-      <circle cx="44" cy="25.5" r="4.2" fill="${bg}"/>
-      <circle cx="44" cy="25.5" r="2" fill="${b}"/>
+    <g transform="translate(32 32) scale(.84) translate(-33.5 -31)">
+      <rect x="8.5" y="18" width="6" height="28" rx="1" fill="${a}"/>
+      <path fill-rule="evenodd" fill="${a}" d="M18.5 18h9a13 14 0 0 1 0 28h-9z M24.5 24h3a7 8 0 0 1 0 16h-3z"/>
+      <circle cx="28" cy="32" r="3.3" fill="${b}"/>
+      <path fill="${a}" d="M44 18h6v22h9v6h-15z"/>
+      <path d="M51.5 20a3.5 3.5 0 0 1 3.5 3.5" fill="none" stroke="${b}" stroke-width="2.6" stroke-linecap="round"/>
+      <path d="M51.5 15.5a7.5 7.5 0 0 1 7.5 7.5" fill="none" stroke="${b}" stroke-width="2.6" stroke-linecap="round"/>
     </g>
-    <circle cx="51" cy="51" r="2.6" fill="${b}"/>
-    <path d="M44.5 51 A6.5 6.5 0 0 1 51 44.5" fill="none" stroke="${b}" stroke-width="3" stroke-linecap="round"/>
-    <path d="M38.5 51 A12.5 12.5 0 0 1 51 38.5" fill="none" stroke="${b}" stroke-width="3" stroke-linecap="round"/>
   </svg>`;
 }
 const ICON = {
