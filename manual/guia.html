@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Guia do app IDL Orçamentos</title>
+<style>
+  @page{size:A4;margin:16mm 16mm 18mm}
+  *{box-sizing:border-box}
+  body{margin:0;font:10.5pt/1.5 "Segoe UI",Arial,sans-serif;color:#1f2a36;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  h1,h2,h3{color:#0f2233;margin:0}
+  .pg{break-after:page}
+  .pg:last-child{break-after:auto}
+  /* capa */
+  .capa{height:262mm;display:flex;flex-direction:column;justify-content:space-between}
+  .capa .topo{display:flex;align-items:center;gap:14px;padding-bottom:14px;border-bottom:2px solid #0f2233}
+  .capa .emp{font-size:13pt;font-weight:700;letter-spacing:.6px;text-transform:uppercase;line-height:1.2}
+  .capa .slogan{font-style:italic;color:#0e7f6f;font-size:10pt;margin-top:3px}
+  .capa .meio h1{font-size:34pt;font-weight:300;letter-spacing:1px;line-height:1.1}
+  .capa .meio h1 b{font-weight:700}
+  .capa .meio p{font-size:13pt;color:#5d6b79;margin:12px 0 0;max-width:140mm}
+  .capa .endereco{margin-top:26px;background:#0f2233;color:#fff;border-radius:10px;padding:14px 18px;display:inline-block}
+  .capa .endereco small{display:block;opacity:.75;font-size:9pt;letter-spacing:.8px;text-transform:uppercase}
+  .capa .endereco b{font-size:14pt;letter-spacing:.3px}
+  .capa .indice{columns:2;column-gap:14mm;font-size:10.5pt;border-top:1px solid #d9dfe6;padding-top:12px}
+  .capa .indice div{break-inside:avoid;padding:3px 0}
+  .capa .indice span{display:inline-block;width:22px;height:22px;border-radius:50%;background:#0e9f8a;color:#fff;text-align:center;font-weight:700;font-size:9.5pt;line-height:22px;margin-right:8px}
+  /* seções */
+  .cab{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+  .cab .n{flex:0 0 34px;height:34px;border-radius:50%;background:#0e9f8a;color:#fff;font-weight:700;font-size:15pt;display:grid;place-items:center}
+  .cab h2{font-size:17pt}
+  .sec{margin-bottom:10mm;break-inside:avoid}
+  .sec.quebra{break-inside:auto}
+  .lado{display:grid;grid-template-columns:1fr 50mm;gap:9mm;align-items:start;break-inside:avoid}
+  .lado.dois{grid-template-columns:1fr 46mm 46mm;gap:6mm}
+  .cel{border:3px solid #0f2233;border-radius:14px;overflow:hidden;box-shadow:0 3px 10px rgba(15,34,51,.18)}
+  .cel img{display:block;width:100%}
+  .leg{font-size:8.5pt;color:#5d6b79;text-align:center;margin-top:4px}
+  ol.passos{margin:0;padding-left:20px}
+  ol.passos li{margin:0 0 7px}
+  ul{margin:4px 0 8px;padding-left:18px}
+  li{margin:2px 0}
+  p{margin:0 0 8px}
+  .alerta{border-left:4px solid #c0392b;background:#fdf1ef;padding:9px 12px;border-radius:0 8px 8px 0;margin:10px 0}
+  .alerta b:first-child{color:#c0392b}
+  .dica{border-left:4px solid #0e9f8a;background:#eef7f5;padding:9px 12px;border-radius:0 8px 8px 0;margin:10px 0}
+  .dica b:first-child{color:#0e7f6f}
+  .msg{background:#dcf8c6;border-radius:8px;padding:8px 10px;font-size:9.5pt;display:inline-block;margin:3px 0;box-shadow:0 1px 2px rgba(0,0,0,.12)}
+  .btn{display:inline;background:#0e9f8a;color:#fff;border-radius:5px;padding:1px 6px;font-size:9pt;font-weight:600;line-height:1;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+  .btn.wa{background:#25d366}
+  .btn.sec{background:#fff;color:#1f2a36;border:1px solid #c9d1da}
+  table.faq{width:100%;border-collapse:collapse}
+  table.faq td{padding:7px 8px;border-bottom:1px solid #e3e8ed;vertical-align:top}
+  table.faq td:first-child{font-weight:600;width:42%;color:#0f2233}
+</style>
+</head>
+<body>
+
+
+<!-- CAPA -->
+<section class="pg capa">
+  <div class="topo">
+    <svg width="58" height="58" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+      <rect x="1.5" y="1.5" width="61" height="61" rx="14" fill="#fff" stroke="#0f2233" stroke-width="3"/>
+      <g transform="translate(32 32) scale(.84) translate(-33.5 -31)">
+        <rect x="8.5" y="18" width="6" height="28" rx="1" fill="#0f2233"/>
+        <path fill-rule="evenodd" fill="#0f2233" d="M18.5 18h9a13 14 0 0 1 0 28h-9z M24.5 24h3a7 8 0 0 1 0 16h-3z"/>
+        <circle cx="28" cy="32" r="3.3" fill="#0e9f8a"/>
+        <path fill="#0f2233" d="M44 18h6v22h9v6h-15z"/>
+        <path d="M51.5 20a3.5 3.5 0 0 1 3.5 3.5" fill="none" stroke="#0e9f8a" stroke-width="2.6" stroke-linecap="round"/>
+        <path d="M51.5 15.5a7.5 7.5 0 0 1 7.5 7.5" fill="none" stroke="#0e9f8a" stroke-width="2.6" stroke-linecap="round"/>
+      </g>
+    </svg>
+    <div><div class="emp">IDL Manutenção de Equipamentos de Monitoramento e Automação</div><div class="slogan">Tecnologia ao seu serviço</div></div>
+  </div>
+
+  <div class="meio">
+    <h1>Guia do app<br><b>IDL Orçamentos</b></h1>
+    <p>Passo a passo para instalar o app no celular, montar orçamentos, enviar pelo WhatsApp, receber a autorização do cliente e entregar o relatório com fotos.</p>
+    <div class="endereco"><small>Endereço do app</small><b>goliveirafisio-debug.github.io/orcamento</b></div>
+  </div>
+
+  <div class="indice">
+    <div><span>1</span>Instalar no celular</div>
+    <div><span>2</span>Criar a senha e guardar o código</div>
+    <div><span>3</span>Conferir seus dados</div>
+    <div><span>4</span>Montar um orçamento</div>
+    <div><span>5</span>Enviar pelo WhatsApp</div>
+    <div><span>6</span>A resposta do cliente</div>
+    <div><span>7</span>Orçamentos salvos</div>
+    <div><span>8</span>Relatório com fotos</div>
+    <div><span>9</span>Segurança e cuidados</div>
+    <div><span>10</span>Dúvidas frequentes</div>
+  </div>
+</section>
+
+<!-- 1 e 2 -->
+<section class="pg">
+  <div class="sec">
+    <div class="cab"><div class="n">1</div><h2>Instalar no celular</h2></div>
+    <p>O app funciona pelo navegador e pode ser instalado como um aplicativo normal, com ícone na tela inicial. Não precisa da Play Store.</p>
+    <ol class="passos">
+      <li>Abra o <b>Chrome</b> no celular e digite o endereço: <b>goliveirafisio-debug.github.io/orcamento</b></li>
+      <li>Toque no menu <b>⋮</b> (três pontinhos, no canto de cima).</li>
+      <li>Escolha <b>Instalar app</b> ou <b>Adicionar à tela inicial</b> e confirme.</li>
+      <li>Pronto: o ícone <b>IDL Orçamentos</b> aparece na tela inicial. Abra sempre por ele.</li>
+    </ol>
+    <div class="dica"><b>Dica:</b> depois de instalado, o app abre em tela cheia e também funciona sem internet para montar orçamentos. Só o envio pelo WhatsApp precisa de conexão.</div>
+  </div>
+
+  <div class="sec">
+    <div class="cab"><div class="n">2</div><h2>Criar a senha e guardar o código</h2></div>
+    <div class="lado dois">
+      <div>
+        <p>Na primeira vez que abrir o app, ele pede para você <b>criar uma senha</b>. Ela protege e criptografa seus orçamentos, clientes e fotos.</p>
+        <ol class="passos">
+          <li>Digite a senha duas vezes (mínimo 4 caracteres; pode ser só números) e toque em <span class="btn">Salvar senha</span>.</li>
+          <li>O app mostra o seu <b>código de recuperação</b> (tipo <b>ABCD-EFGH-JKLM-NPQR</b>).</li>
+          <li>Toque em <span class="btn wa">📲 Enviar para o meu WhatsApp</span>. O código fica guardado numa conversa com você mesmo.</li>
+          <li>Marque <b>Guardei o código em lugar seguro</b> e toque em <span class="btn">Continuar</span>.</li>
+        </ol>
+        <div class="alerta"><b>Muito importante:</b> o código de recuperação aparece <b>uma única vez</b>. Se você esquecer a senha, é só com ele que dá para criar uma senha nova sem perder nada. Sem senha e sem código, os orçamentos não podem ser recuperados.</div>
+      </div>
+      <div><div class="cel"><img src="img/t1.jpg" alt=""></div><div class="leg">Criar a senha</div></div>
+      <div><div class="cel"><img src="img/t2.jpg" alt=""></div><div class="leg">Código de recuperação</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 3 e 4 -->
+<section class="pg">
+  <div class="sec">
+    <div class="cab"><div class="n">3</div><h2>Conferir seus dados</h2></div>
+    <div class="lado">
+      <div>
+        <p>Toque na engrenagem <b>⚙️</b> no alto da tela. Seus dados já vêm preenchidos:</p>
+        <ul>
+          <li>Empresa: IDL Manutenção de Equipamentos de Monitoramento e Automação</li>
+          <li>Nome: Isaias — Responsável técnico</li>
+          <li>WhatsApp: (81) 98622-0444</li>
+        </ul>
+        <p>Complete, se quiser, <b>CNPJ/CPF</b>, <b>e-mail</b> e <b>Instagram</b>. Eles aparecem no orçamento e no rodapé do PDF. Depois toque em <span class="btn">Salvar</span>.</p>
+        <div class="dica"><b>Importante:</b> o <b>WhatsApp</b> cadastrado aqui é para onde chega a resposta do cliente (concordo ou discordo). Mantenha sempre o número certo.</div>
+        <p>Nessa mesma tela ficam os botões <span class="btn sec">🔒 Trocar senha</span> e <span class="btn sec">🔑 Novo código</span>.</p>
+      </div>
+      <div><div class="cel"><img src="img/t3.jpg" alt=""></div><div class="leg">Meus dados</div></div>
+    </div>
+  </div>
+
+</section>
+
+<section class="pg">
+  <div class="sec">
+    <div class="cab"><div class="n">4</div><h2>Montar um orçamento</h2></div>
+    <div class="lado">
+      <div>
+        <p>O orçamento é feito em etapas, na barra do alto: <b>1 Cliente → 2 Serviços → 3 Materiais → 4 Pagamento → 5 Enviar</b>. Use <span class="btn">Avançar ›</span> e <span class="btn sec">‹ Voltar</span>. O <b>total</b> aparece sempre no rodapé da tela.</p>
+        <p><b>1 · Cliente:</b> nome e WhatsApp do cliente são obrigatórios. Contato, CPF/CNPJ, e-mail e endereço são opcionais.</p>
+        <p><b>2 · Serviços:</b> descreva cada serviço. Toque nas <b>sugestões</b> para adicionar rápido (manutenção de CFTV, DVR/NVR, alarme, portão, automação…) e ajuste o texto se precisar. Informe também o valor da <b>mão de obra</b>.</p>
+      </div>
+      <div><div class="cel"><img src="img/t4.jpg" alt=""></div><div class="leg">Etapa 1 · Cliente</div></div>
+    </div>
+  </div>
+</section>
+
+  <div class="sec">
+    <div class="lado">
+      <div>
+        <p><b>3 · Materiais:</b> para cada item, informe descrição, quantidade, unidade (un, m, cx…) e valor unitário. O subtotal e o total são calculados sozinhos. Use vírgula nos centavos: <b>189,90</b>.</p>
+        <p><b>4 · Pagamento:</b> toque numa condição pronta (ex.: <i>50% na aprovação e 50% na conclusão, via PIX</i>) ou escreva a sua. Preencha também, se quiser, desconto, validade (padrão 15 dias), prazo de execução, garantia e observações.</p>
+        <div class="dica"><b>Dica:</b> tudo é salvo automaticamente enquanto você digita. Se o app fechar, o orçamento continua lá quando você voltar.</div>
+      </div>
+      <div><div class="cel"><img src="img/t5.jpg" alt=""></div><div class="leg">Etapa 3 · Materiais</div></div>
+    </div>
+  </div>
+
+</section>
+
+<section class="pg">
+  <div class="sec">
+    <div class="cab"><div class="n">5</div><h2>Enviar pelo WhatsApp</h2></div>
+    <div class="lado">
+      <div>
+        <p>Na etapa <b>5 Enviar</b> a mensagem para o cliente já vem pronta, em tom profissional, com o valor total, a validade e o <b>link do orçamento</b>. Você pode editar o texto à vontade.</p>
+        <ol class="passos">
+          <li>Confira a mensagem.</li>
+          <li>Toque em <span class="btn wa">📲 Enviar pelo WhatsApp</span>. O WhatsApp abre na conversa do cliente com a mensagem pronta; é só enviar.</li>
+        </ol>
+        <p>Outros botões dessa tela:</p>
+        <ul>
+          <li><span class="btn sec">👁 Ver como o cliente vê</span>: mostra o orçamento como ele vai abrir.</li>
+          <li><span class="btn sec">📄 Gerar PDF executivo</span>: cria o orçamento em PDF (escolha <b>Salvar como PDF</b>).</li>
+          <li><span class="btn sec">💾 Salvar</span> e <span class="btn sec">＋ Novo orçamento</span>.</li>
+        </ul>
+      </div>
+      <div><div class="cel"><img src="img/t6.jpg" alt=""></div><div class="leg">Etapa 5 · Enviar</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 6 e 7 -->
+<section class="pg">
+  <div class="sec">
+    <div class="cab"><div class="n">6</div><h2>A resposta do cliente</h2></div>
+    <div class="lado dois">
+      <div>
+        <p>O cliente toca no link e vê o orçamento completo, com a logo da IDL. No final há dois botões:</p>
+        <ul>
+          <li><b>✅ Concordo e autorizo</b>: ele confirma o nome e envia a autorização.</li>
+          <li><b>✖ Discordo</b>: ele pode escrever o motivo.</li>
+        </ul>
+        <p>A resposta chega no <b>seu WhatsApp</b>, assim:</p>
+        <div class="msg">✅ <b>CONCORDO</b><br>Olá, Isaias! Autorizo a execução dos serviços conforme o orçamento nº 2026-001, no valor de R$ 1.224,80.<br>Nome: João Pereira · Data: 29/09/2026</div>
+        <div class="msg">❌ <b>DISCORDO</b><br>Não estou de acordo com o orçamento nº 2026-001.<br>Motivo: …</div>
+        <p style="margin-top:8px">O cliente não precisa de senha nem instalar nada. Ele também pode baixar o orçamento em PDF.</p>
+      </div>
+      <div><div class="cel"><img src="img/t7.jpg" alt=""></div><div class="leg">O que o cliente vê</div></div>
+      <div><div class="cel"><img src="img/t8.jpg" alt=""></div><div class="leg">Cliente autorizando</div></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="cab"><div class="n">7</div><h2>Orçamentos salvos</h2></div>
+    <p>Toque em <span class="btn sec">📂 Salvos</span> no alto da tela para ver todos os orçamentos. Em cada um você pode:</p>
+    <ul>
+      <li><b>Mudar a situação:</b> rascunho → enviado → aprovado / recusado → concluído. Quando o cliente responder, marque <b>aprovado</b> ou <b>recusado</b>.</li>
+      <li><b>Abrir</b> para continuar ou corrigir.</li>
+      <li><b>⧉ Duplicar</b>: cria um orçamento novo a partir de outro parecido (ótimo para clientes com serviços repetidos).</li>
+      <li><b>🗑 Excluir</b>: apaga o orçamento e as fotos dele.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 8 -->
+<section class="pg">
+  <div class="sec">
+    <div class="cab"><div class="n">8</div><h2>Relatório com fotos (serviço executado)</h2></div>
+    <div class="lado">
+      <div>
+        <p>Depois de terminar o serviço, abra o orçamento (em <b>Salvos</b>) e vá até a etapa <b>6 Relatório</b>.</p>
+        <ol class="passos">
+          <li>Confira a <b>data</b> e o <b>técnico</b>.</li>
+          <li>Marque os <b>serviços que foram executados</b>.</li>
+          <li>Escreva a <b>descrição do que foi feito</b> e, se houver, <b>recomendações</b> ao cliente.</li>
+          <li>Toque em <span class="btn sec">📷 Adicionar fotos</span>: tire na hora ou escolha da galeria. Escreva uma <b>legenda</b> em cada foto.</li>
+          <li>Toque em <span class="btn">📄 Gerar relatório em PDF</span> e escolha <b>Salvar como PDF</b>.</li>
+          <li>Toque em <span class="btn wa">📲 Avisar o cliente pelo WhatsApp</span> e <b>anexe o PDF</b> na conversa (clipe 📎 → Documento).</li>
+        </ol>
+        <p>O orçamento passa a aparecer como <b>🏁 concluído</b>.</p>
+        <div class="dica"><b>Dica sobre as fotos:</b> evite fotografar rostos, placas de carro ou telas com imagens de pessoas. Prefira mostrar o equipamento, a instalação e o resultado.</div>
+      </div>
+      <div><div class="cel"><img src="img/t9.jpg" alt=""></div><div class="leg">Etapa 6 · Relatório</div></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="cab"><div class="n">9</div><h2>Segurança e cuidados</h2></div>
+    <ul>
+      <li><b>Bloqueio automático:</b> se o app ficar mais de 2 minutos em segundo plano, pede a senha de novo.</li>
+      <li><b>Esqueceu a senha?</b> Na tela de senha, toque em <b>Esqueci a senha</b>, digite o código de recuperação e crie uma senha nova. Nada se perde.</li>
+      <li><b>Achou que alguém viu seu código?</b> Em ⚙️, toque em <b>🔑 Novo código</b>. O antigo deixa de funcionar.</li>
+      <li><b>Tudo fica só no seu celular</b>, criptografado. Nenhum servidor guarda os orçamentos.</li>
+    </ul>
+    <div class="alerta"><b>Atenção:</b> como tudo fica no celular, <b>trocar de aparelho, desinstalar o Chrome ou "limpar os dados" do Chrome apaga os orçamentos salvos</b>. Os links que você já mandou para os clientes continuam funcionando. Guarde os PDFs importantes no WhatsApp ou no Google Drive.</div>
+    <ul>
+      <li>Use senha ou biometria para desbloquear o próprio celular.</li>
+      <li>Mande o link do orçamento só para o próprio cliente: quem tiver o link consegue ver o orçamento.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 10 -->
+<section class="pg">
+  <div class="sec">
+    <div class="cab"><div class="n">10</div><h2>Dúvidas frequentes</h2></div>
+    <table class="faq">
+      <tr><td>O cliente precisa instalar alguma coisa?</td><td>Não. Ele só toca no link que chega no WhatsApp e o orçamento abre no navegador.</td></tr>
+      <tr><td>Posso mudar um orçamento depois de enviar?</td><td>Sim. Abra em <b>Salvos</b>, corrija e envie de novo. O cliente deve usar o link mais novo.</td></tr>
+      <tr><td>O valor total não bateu. O que conferir?</td><td>Use vírgula nos centavos (189,90) e confira quantidade e mão de obra. O desconto é subtraído do total.</td></tr>
+      <tr><td>Como mudo a mensagem padrão?</td><td>Na etapa 5, edite o texto antes de enviar. O botão <b>↺ Refazer mensagem padrão</b> volta ao texto original.</td></tr>
+      <tr><td>O PDF não aparece para enviar.</td><td>Na tela de impressão, escolha <b>Salvar como PDF</b> (não uma impressora). O arquivo fica em <b>Downloads</b>; no WhatsApp use 📎 → Documento.</td></tr>
+      <tr><td>Esqueci a senha e perdi o código.</td><td>Aí não há como abrir os dados antigos. Toque em <b>Esqueci a senha → Perdi o código também</b>: o app apaga tudo e você começa do zero.</td></tr>
+      <tr><td>Troquei de celular.</td><td>Instale o app no celular novo (passo 1) e crie uma senha nova. Os orçamentos do aparelho antigo não passam para o novo.</td></tr>
+      <tr><td>O app mostra uma versão antiga.</td><td>Feche e abra de novo com internet: ele se atualiza sozinho.</td></tr>
+    </table>
+  </div>
+
+  <div class="dica" style="margin-top:10mm"><b>Resumo do dia a dia:</b> abrir o app → senha → <b>＋ Novo orçamento</b> → cliente, serviços, materiais, pagamento → <b>Enviar pelo WhatsApp</b> → esperar o <b>CONCORDO</b> → marcar <b>aprovado</b> → executar o serviço → etapa <b>6 Relatório</b> com fotos → enviar o PDF → <b>concluído</b>.</div>
+</section>
+
+</body>
+</html>
