@@ -111,6 +111,8 @@
   .lock-box label{text-align:left}
   .lock-box input{font-size:18px;letter-spacing:2px;text-align:center}
   .lock-emp{font-size:13px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--brand);margin-top:8px}
+  .lock-codigo{font:700 20px/1.3 ui-monospace,Consolas,monospace;letter-spacing:2px;background:#eef6f4;border:1px dashed var(--accent);border-radius:12px;padding:14px 8px;color:var(--brand);margin-top:12px}
+  #lockCodigoSeguir:disabled{opacity:.45}
   #lockMsg{color:var(--danger);font-size:14px;min-height:20px;margin:10px 0 4px}
   .doc-head .brand{display:flex;align-items:center;gap:12px}
   .doc-head .brand svg{flex:0 0 auto}
@@ -167,18 +169,32 @@
 
 <!-- Bloqueio por senha -->
 <div id="lock" class="hidden" role="dialog" aria-modal="true" aria-labelledby="lockTitulo">
-  <form class="lock-box" onsubmit="event.preventDefault();lockEnviar()">
+  <div class="lock-box">
     <div id="lockLogo"></div>
     <div class="lock-emp" id="lockEmp"></div>
-    <h2 id="lockTitulo"></h2>
-    <p id="lockTexto"></p>
-    <div><label for="lockSenha">Senha</label><input id="lockSenha" type="password" autocomplete="current-password" required></div>
-    <div><label for="lockConf">Repita a senha</label><input id="lockConf" type="password" autocomplete="new-password"></div>
-    <div id="lockMsg" role="alert"></div>
-    <button class="btn block" id="lockBtn" type="submit">Entrar</button>
-    <button class="btn ghost" id="lockCancelar" type="button" onclick="aoDesbloquear=null;esconderLock()">Cancelar</button>
-    <button class="btn ghost" id="lockEsqueci" type="button" onclick="lockEsqueci()">Esqueci a senha</button>
-  </form>
+    <form id="lockForm" onsubmit="event.preventDefault();lockEnviar()">
+      <h2 id="lockTitulo"></h2>
+      <p id="lockTexto"></p>
+      <div><label for="lockSenha" id="lockSenhaLbl">Senha</label><input id="lockSenha" type="password" autocomplete="current-password" required></div>
+      <div><label for="lockConf">Repita a senha</label><input id="lockConf" type="password" autocomplete="new-password"></div>
+      <div id="lockMsg" role="alert"></div>
+      <button class="btn block" id="lockBtn" type="submit">Entrar</button>
+      <button class="btn ghost" id="lockCancelar" type="button" onclick="aoDesbloquear=null;lockModo=DADOS_KEY?'':'entrar';DADOS_KEY?esconderLock():mostrarLock('entrar')">Cancelar</button>
+      <button class="btn ghost" id="lockEsqueci" type="button" onclick="lockEsqueci()">Esqueci a senha</button>
+      <button class="btn ghost" id="lockApagar" type="button" style="color:var(--danger)" onclick="lockApagarTudo()">Perdi o código também</button>
+    </form>
+    <div id="lockCodigoBox" class="hidden">
+      <h2 id="lockCodigoTitulo"></h2>
+      <p>Se esquecer a senha, é com este código que você cria uma nova <b>sem perder nada</b>. Ele aparece só agora.</p>
+      <div class="lock-codigo" id="lockCodigo"></div>
+      <div style="display:grid;gap:8px;margin-top:12px">
+        <button class="btn wa block" type="button" onclick="codigoWhats()">📲 Enviar para o meu WhatsApp</button>
+        <button class="btn sec block" type="button" onclick="codigoCopiar()">📋 Copiar código</button>
+      </div>
+      <label class="chk" style="margin-top:14px;justify-content:center"><input type="checkbox" id="lockCodigoOk" onchange="$('#lockCodigoSeguir').disabled=!this.checked"> Guardei o código em lugar seguro</label>
+      <button class="btn block" id="lockCodigoSeguir" type="button" disabled onclick="concluirLock()">Continuar</button>
+    </div>
+  </div>
 </div>
 
 <!-- ================= EDITOR ================= -->
@@ -369,7 +385,7 @@
     <input id="p_url" data-p="url" inputmode="url" placeholder="https://seuusuario.github.io/orcamento/">
     <p style="font-size:12px;color:var(--muted);margin:6px 0 0">Se o app já estiver aberto num endereço https, deixe em branco que ele usa o endereço atual.</p>
   </div>
-  <div class="df" style="justify-content:space-between"><button class="btn sec" onclick="trocarSenha()">🔒 Trocar senha</button><button class="btn" onclick="saveProfile()">Salvar</button></div>
+  <div class="df" style="justify-content:space-between"><span style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sec" onclick="trocarSenha()">🔒 Trocar senha</button><button class="btn sec" onclick="novoCodigoRecuperacao()">🔑 Novo código</button></span><button class="btn" onclick="saveProfile()">Salvar</button></div>
 </dialog>
 
 <!-- Salvos -->
@@ -416,10 +432,47 @@ const ICON = {
 
 /* ============ utilidades ============ */
 const $ = s => document.querySelector(s);
-const LS = {
+// Armazenamento: chaves comuns vão direto ao localStorage; as protegidas ficam em memória
+// depois do desbloqueio e são gravadas no disco sempre criptografadas (AES-GCM).
+const PROTEGIDAS = ['orc.prof', 'orc.draft', 'orc.quotes'];
+const MEM = new Map(), PENDENTES = new Set();
+let DADOS_KEY = null, timerGravar = null;
+const LS_raw = {
   get(k, d){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } },
   set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
 };
+const LS = {
+  get(k, d){
+    if (!PROTEGIDAS.includes(k)) return LS_raw.get(k, d);
+    const v = MEM.get(k); try { return v ? JSON.parse(v) : d; } catch(e){ return d; }
+  },
+  set(k, v){
+    if (!PROTEGIDAS.includes(k)) return LS_raw.set(k, v);
+    MEM.set(k, JSON.stringify(v));
+    if (!DADOS_KEY) return;                    // antes do desbloqueio nada vai ao disco
+    PENDENTES.add(k); clearTimeout(timerGravar); timerGravar = setTimeout(gravarPendentes, 250);
+  }
+};
+async function cifrar(bytes){
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  return { iv, ct: new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, DADOS_KEY, bytes)) };
+}
+async function decifrar(iv, ct){ return new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, DADOS_KEY, ct)); }
+const b64s = u8 => { let s = ''; u8.forEach(b => s += String.fromCharCode(b)); return btoa(s); };
+const unb64s = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+async function cifrarTexto(txt){ const { iv, ct } = await cifrar(new TextEncoder().encode(txt)); return { iv: b64s(iv), ct: b64s(ct) }; }
+async function decifrarTexto(o){ return new TextDecoder().decode(await decifrar(unb64s(o.iv), unb64s(o.ct))); }
+async function gravarCifrado(k){
+  const v = MEM.get(k);
+  if (v == null) return localStorage.removeItem('orc.enc.' + k);
+  try { localStorage.setItem('orc.enc.' + k, JSON.stringify(await cifrarTexto(v))); } catch(e){ toast('Sem espaço para salvar no aparelho'); }
+}
+async function gravarPendentes(){
+  clearTimeout(timerGravar);
+  if (!DADOS_KEY) return;
+  const ks = [...PENDENTES]; PENDENTES.clear();
+  await Promise.all(ks.map(gravarCifrado));
+}
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const brl = n => (Number(n)||0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
 function num(v){
@@ -839,8 +892,22 @@ async function fotoTx(modo, fn){
   const db = await FOTO_DB;
   return new Promise((ok, erro) => { const t = db.transaction('fotos', modo); const req = fn(t.objectStore('fotos')); t.oncomplete = () => ok(req?.result); t.onerror = () => erro(t.error); });
 }
-const fotoGet = id => fotoTx('readonly', s => s.get(id));
-const fotoPut = (id, dataURL) => fotoTx('readwrite', s => s.put(dataURL, id));
+async function fotoGet(id){
+  const v = await fotoTx('readonly', s => s.get(id));
+  if (v == null) return null;
+  if (typeof v === 'string') return v;              // foto antiga, ainda sem criptografia
+  return new TextDecoder().decode(await decifrar(new Uint8Array(v.iv), new Uint8Array(v.ct)));
+}
+async function fotoPut(id, dataURL){
+  const { iv, ct } = await cifrar(new TextEncoder().encode(dataURL));
+  return fotoTx('readwrite', s => s.put({ iv, ct }, id));
+}
+async function migrarFotos(){
+  try {
+    const ks = await fotoTx('readonly', s => s.getAllKeys());
+    for (const k of ks){ const v = await fotoTx('readonly', s => s.get(k)); if (typeof v === 'string') await fotoPut(k, v); }
+  } catch(e){}
+}
 const fotoDel = id => fotoTx('readwrite', s => s.delete(id));
 
 function reduzirFoto(file, max = 1280){
@@ -981,56 +1048,161 @@ window.addEventListener('beforeprint', renderPrint);
 function preview(){ showDoc(prof, q, true); $('#backEdit').classList.remove('hidden'); }
 function closePreview(){ viewData = null; $('#viewer').classList.add('hidden'); $('#editor').classList.remove('hidden'); document.title = 'IDL Orçamentos'; }
 
-/* ============ senha de acesso (bloqueio do app) ============ */
-// A senha nunca é guardada: fica só um hash PBKDF2 com sal, no aparelho.
+/* ============ senha de acesso + criptografia dos dados ============ */
+// Uma chave de dados aleatória (AES-GCM 256) criptografa perfil, orçamentos e fotos.
+// Essa chave fica guardada "trancada" duas vezes: pela senha e pelo código de recuperação
+// (cada um passa por PBKDF2-SHA256). Nenhuma das duas coisas é guardada no aparelho.
 const LOCK_KEY = 'orc.lock', LOCK_ITER = 150000, LOCK_APOS_MS = 2 * 60 * 1000;
-let lockSaiu = 0, lockErros = 0, lockAte = 0, lockModo = 'entrar', aoDesbloquear = null;
+let lockSaiu = 0, lockErros = 0, lockAte = 0, lockModo = 'entrar', aoDesbloquear = null, chaveBruta = null;
+
+const b64 = buf => { let s = ''; new Uint8Array(buf).forEach(b => s += String.fromCharCode(b)); return btoa(s); };
+const unb64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
 const hex = buf => [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
-async function hashSenha(senha, saltHex, iter = LOCK_ITER){
-  const salt = Uint8Array.from(saltHex.match(/../g).map(h => parseInt(h, 16)));
-  const chave = await crypto.subtle.importKey('raw', new TextEncoder().encode(senha), 'PBKDF2', false, ['deriveBits']);
-  return hex(await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations: iter }, chave, 256));
+const aleatorio = n => crypto.getRandomValues(new Uint8Array(n));
+
+async function chaveDeSenha(senha, salt, iter = LOCK_ITER){
+  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(senha), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations: iter }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
 }
+async function trancar(bruta, segredo){
+  const salt = aleatorio(16), iv = aleatorio(12);
+  const k = await chaveDeSenha(segredo, salt);
+  return { salt: b64(salt), iv: b64(iv), ct: b64(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, k, bruta)) };
+}
+async function destrancar(t, segredo, iter){
+  const k = await chaveDeSenha(segredo, unb64(t.salt), iter || LOCK_ITER);
+  return new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(t.iv) }, k, unb64(t.ct)));
+}
+// Hash do formato antigo (só senha, sem criptografia) — usado apenas para migrar
+async function hashSenhaV1(senha, saltHex, iter){
+  const salt = Uint8Array.from(saltHex.match(/../g).map(h => parseInt(h, 16)));
+  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(senha), 'PBKDF2', false, ['deriveBits']);
+  return hex(await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations: iter }, base, 256));
+}
+function novoCodigo(){
+  const letras = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const r = aleatorio(16); let s = '';
+  r.forEach((b, i) => { s += letras[b % letras.length]; if (i % 4 === 3 && i < 15) s += '-'; });
+  return s;
+}
+const normCodigo = c => c.toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/(.{4})(?=.)/g, '$1-');
+
+// ---- dados protegidos: memória depois do desbloqueio, disco sempre criptografado ----
+async function ativarChave(bruta){
+  chaveBruta = bruta;
+  if (DADOS_KEY) return;                       // já desbloqueado nesta sessão: dados em memória valem
+  DADOS_KEY = await crypto.subtle.importKey('raw', bruta, 'AES-GCM', false, ['encrypt', 'decrypt']);
+  for (const k of PROTEGIDAS){
+    const enc = localStorage.getItem('orc.enc.' + k), plano = localStorage.getItem(k);
+    if (enc){
+      try { MEM.set(k, await decifrarTexto(JSON.parse(enc))); } catch(e){ console.error('falha ao decifrar', k); }
+    } else if (plano){
+      MEM.set(k, plano);                       // migração do formato antigo
+      await gravarCifrado(k);
+      localStorage.removeItem(k);
+    }
+  }
+  migrarFotos();
+}
+async function criarCofre(senha){
+  const bruta = aleatorio(32), codigo = novoCodigo();
+  LS_raw.set(LOCK_KEY, { v: 2, porSenha: await trancar(bruta, senha), porCodigo: await trancar(bruta, codigo.replace(/-/g, '')) });
+  await ativarChave(bruta);
+  return codigo;
+}
+async function retrancarSenha(senha){
+  const l = LS_raw.get(LOCK_KEY, null);
+  l.porSenha = await trancar(chaveBruta, senha);
+  LS_raw.set(LOCK_KEY, l);
+}
+
+// ---- tela ----
 function mostrarLock(modo){
   lockModo = modo;
-  const criar = modo === 'criar' || modo === 'trocar';
-  $('#lockTitulo').textContent = modo === 'trocar' ? 'Nova senha de acesso' : criar ? 'Crie sua senha de acesso' : 'Digite sua senha';
+  const criar = ['criar', 'trocar', 'nova'].includes(modo), codigo = modo === 'codigo';
+  $('#lockTitulo').textContent = { criar: 'Crie sua senha de acesso', trocar: 'Nova senha de acesso', nova: 'Crie uma senha nova', codigo: 'Recuperar acesso', entrar: 'Digite sua senha' }[modo];
   $('#lockTexto').textContent = criar
-    ? 'Ela protege seus orçamentos, clientes e fotos neste aparelho. Use pelo menos 4 caracteres (pode ser só números).'
-    : 'Seus orçamentos estão protegidos.';
+    ? 'Ela protege e criptografa seus orçamentos, clientes e fotos neste aparelho. Use pelo menos 4 caracteres (pode ser só números).'
+    : codigo ? 'Digite o código de recuperação que você guardou quando criou a senha.' : 'Seus orçamentos estão protegidos.';
+  $('#lockSenhaLbl').textContent = codigo ? 'Código de recuperação' : 'Senha';
+  $('#lockSenha').type = codigo ? 'text' : 'password';
+  $('#lockSenha').autocomplete = codigo ? 'off' : (criar ? 'new-password' : 'current-password');
+  $('#lockSenha').placeholder = codigo ? 'XXXX-XXXX-XXXX-XXXX' : '';
   $('#lockConf').parentElement.classList.toggle('hidden', !criar);
-  $('#lockEsqueci').classList.toggle('hidden', criar);
-  $('#lockCancelar').classList.toggle('hidden', modo !== 'trocar');
-  $('#lockBtn').textContent = criar ? 'Salvar senha' : 'Entrar';
+  $('#lockEsqueci').classList.toggle('hidden', modo !== 'entrar');
+  $('#lockApagar').classList.toggle('hidden', !codigo);
+  $('#lockCancelar').classList.toggle('hidden', !['trocar', 'codigo'].includes(modo));
+  $('#lockBtn').textContent = criar ? 'Salvar senha' : codigo ? 'Recuperar' : 'Entrar';
+  $('#lockForm').classList.remove('hidden'); $('#lockCodigoBox').classList.add('hidden');
   $('#lockSenha').value = ''; $('#lockConf').value = ''; $('#lockMsg').textContent = '';
   $('#lock').classList.remove('hidden');
   document.body.style.overflow = 'hidden';
   setTimeout(() => $('#lockSenha').focus(), 50);
 }
 function esconderLock(){ $('#lock').classList.add('hidden'); document.body.style.overflow = ''; }
+function concluirLock(){ esconderLock(); const f = aoDesbloquear; aoDesbloquear = null; if (f) f(); }
+function mostrarCodigo(codigo, titulo){
+  $('#lockForm').classList.add('hidden'); $('#lockCodigoBox').classList.remove('hidden');
+  $('#lockCodigoTitulo').textContent = titulo || 'Guarde seu código de recuperação';
+  $('#lockCodigo').textContent = codigo;
+  $('#lockCodigoOk').checked = false; $('#lockCodigoSeguir').disabled = true;
+}
+function codigoWhats(){
+  const c = $('#lockCodigo').textContent, to = phone(prof.wa);
+  const msg = `🔐 Código de recuperação do app IDL Orçamentos:\n\n${c}\n\nGuarde esta mensagem. Ela permite criar uma senha nova sem perder os orçamentos.`;
+  window.open(`https://wa.me/${to}?text=${encodeURIComponent(msg)}`, '_blank');
+}
+async function codigoCopiar(){ try { await navigator.clipboard.writeText($('#lockCodigo').textContent); toast('Código copiado'); } catch(e){ toast('Anote o código à mão'); } }
+
 async function lockEnviar(){
-  const senha = $('#lockSenha').value, msg = $('#lockMsg');
-  if (lockModo === 'criar' || lockModo === 'trocar'){
-    if (senha.length < 4){ msg.textContent = 'Use pelo menos 4 caracteres.'; return; }
-    if (senha !== $('#lockConf').value){ msg.textContent = 'As duas senhas não conferem.'; return; }
-    const salt = hex(crypto.getRandomValues(new Uint8Array(16)));
-    LS.set(LOCK_KEY, { salt, iter: LOCK_ITER, hash: await hashSenha(senha, salt) });
-    esconderLock(); toast(lockModo === 'trocar' ? 'Senha alterada' : 'Senha criada');
-  } else {
+  const val = $('#lockSenha').value, msg = $('#lockMsg');
+  $('#lockBtn').disabled = true;
+  try {
+    if (['criar', 'trocar', 'nova'].includes(lockModo)){
+      if (val.length < 4){ msg.textContent = 'Use pelo menos 4 caracteres.'; return; }
+      if (val !== $('#lockConf').value){ msg.textContent = 'As duas senhas não conferem.'; return; }
+      if (lockModo === 'criar'){ mostrarCodigo(await criarCofre(val)); return; }
+      await retrancarSenha(val);
+      toast(lockModo === 'trocar' ? 'Senha alterada' : 'Senha nova criada'); concluirLock(); return;
+    }
     if (Date.now() < lockAte){ msg.textContent = `Muitas tentativas. Aguarde ${Math.ceil((lockAte - Date.now()) / 1000)} s.`; return; }
-    const l = LS.get(LOCK_KEY, null);
-    if (l && await hashSenha(senha, l.salt, l.iter) === l.hash){ lockErros = 0; esconderLock(); }
-    else {
-      lockErros++; $('#lockSenha').value = '';
-      if (lockErros >= 5){ lockAte = Date.now() + 30000 * (lockErros - 4); msg.textContent = 'Senha incorreta. Aguarde 30 s para tentar de novo.'; }
-      else msg.textContent = 'Senha incorreta.';
+    const l = LS_raw.get(LOCK_KEY, null);
+    if (lockModo === 'codigo'){
+      try {
+        await ativarChave(await destrancar(l.porCodigo, normCodigo(val).replace(/-/g, '')));
+        lockErros = 0; mostrarLock('nova'); return;
+      } catch(e){ return errou('Código incorreto.'); }
+    }
+    if (lockModo === 'confirmarTroca'){
+      try { await destrancar(l.porSenha, val); } catch(e){ return errou('Senha incorreta.'); }
+      lockErros = 0; mostrarLock('trocar'); return;
+    }
+    // entrar
+    if (l && l.v === 2){
+      try { await ativarChave(await destrancar(l.porSenha, val)); }
+      catch(e){ return errou('Senha incorreta.'); }
+      lockErros = 0; concluirLock(); return;
+    }
+    if (l && l.hash && await hashSenhaV1(val, l.salt, l.iter) === l.hash){   // formato antigo → migra
+      lockErros = 0;
+      mostrarCodigo(await criarCofre(val), 'Seus dados agora estão criptografados. Guarde o código de recuperação');
       return;
     }
-  }
-  const f = aoDesbloquear; aoDesbloquear = null; if (f) f();
+    return errou('Senha incorreta.');
+  } finally { $('#lockBtn').disabled = false; }
+}
+function errou(texto){
+  lockErros++; $('#lockSenha').value = '';
+  if (lockErros >= 5){ lockAte = Date.now() + 30000 * (lockErros - 4); $('#lockMsg').textContent = texto + ' Aguarde 30 s para tentar de novo.'; }
+  else $('#lockMsg').textContent = texto;
 }
 function lockEsqueci(){
-  if (!confirm('Sem a senha não há como recuperar os dados.\n\nPara criar uma senha nova, TODOS os orçamentos, clientes e fotos deste aparelho serão apagados. Continuar?')) return;
+  const l = LS_raw.get(LOCK_KEY, null);
+  if (l && l.v === 2) return mostrarLock('codigo');
+  lockApagarTudo();
+}
+function lockApagarTudo(){
+  if (!confirm('Sem a senha e sem o código de recuperação não há como abrir os dados.\n\nPara começar do zero, TODOS os orçamentos, clientes e fotos deste aparelho serão apagados. Continuar?')) return;
   if (prompt('Para confirmar, digite APAGAR') !== 'APAGAR') return;
   try { Object.keys(localStorage).filter(k => k.startsWith('orc.')).forEach(k => localStorage.removeItem(k)); } catch(e){}
   try { indexedDB.deleteDatabase('idl-fotos'); } catch(e){}
@@ -1038,25 +1210,38 @@ function lockEsqueci(){
 }
 function trocarSenha(){
   dlgProfile.close();
-  aoDesbloquear = () => mostrarLock('trocar');
+  aoDesbloquear = null;
   mostrarLock('entrar');
   $('#lockTitulo').textContent = 'Digite a senha atual';
   $('#lockCancelar').classList.remove('hidden');
   $('#lockEsqueci').classList.add('hidden');
+  lockModo = 'confirmarTroca';
+}
+async function novoCodigoRecuperacao(){
+  if (!chaveBruta) return;
+  if (!confirm('Gerar um novo código de recuperação? O código antigo deixa de funcionar.')) return;
+  const codigo = novoCodigo(), l = LS_raw.get(LOCK_KEY, null);
+  l.porCodigo = await trancar(chaveBruta, codigo.replace(/-/g, ''));
+  LS_raw.set(LOCK_KEY, l);
+  dlgProfile.close(); aoDesbloquear = null;
+  $('#lock').classList.remove('hidden'); document.body.style.overflow = 'hidden';
+  mostrarCodigo(codigo, 'Seu novo código de recuperação');
 }
 function exigirSenha(depois){
   aoDesbloquear = depois;
-  mostrarLock(LS.get(LOCK_KEY, null) ? 'entrar' : 'criar');
+  mostrarLock(LS_raw.get(LOCK_KEY, null) ? 'entrar' : 'criar');
 }
 // Bloqueia de novo quando o app fica em segundo plano por mais de 2 minutos
 document.addEventListener('visibilitychange', () => {
-  if (location.hash.startsWith('#o=') || !LS.get(LOCK_KEY, null)) return;
-  if (document.hidden) lockSaiu = Date.now();
+  if (location.hash.startsWith('#o=') || !LS_raw.get(LOCK_KEY, null)) return;
+  if (document.hidden){ lockSaiu = Date.now(); gravarPendentes(); }
   else if (lockSaiu && Date.now() - lockSaiu > LOCK_APOS_MS && $('#lock').classList.contains('hidden')){
     document.querySelectorAll('dialog[open]').forEach(d => d.close());
+    aoDesbloquear = null;
     mostrarLock('entrar');
   }
 });
+window.addEventListener('pagehide', () => gravarPendentes());
 
 /* ============ inicialização ============ */
 function startEditor(){
@@ -1077,6 +1262,7 @@ function startEditor(){
   }
   $('#lockLogo').innerHTML = LOGO(64); $('#lockEmp').textContent = prof.emp || '';
   exigirSenha(() => {
+    prof = { ...PROF_PADRAO, ...LS.get('orc.prof', {}) };
     q = LS.get('orc.draft', null) || blankQuote();
     startEditor();
     if (!prof.resp) setTimeout(openProfile, 300);
