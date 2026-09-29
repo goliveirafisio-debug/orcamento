@@ -1,0 +1,659 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f2233">
+<title>Gerador de Orçamento</title>
+<style>
+  :root{
+    --bg:#f3f5f8; --card:#fff; --ink:#15202b; --muted:#5b6b7a; --line:#dde3ea;
+    --brand:#0f2233; --accent:#0e9f8a; --accent-ink:#fff; --danger:#c0392b; --warn:#b7791f;
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
+  header.top{background:var(--brand);color:#fff;padding:14px 16px;position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px}
+  header.top h1{font-size:17px;margin:0;flex:1;font-weight:650;letter-spacing:.2px}
+  header.top button{background:rgba(255,255,255,.12);color:#fff;border:0;border-radius:10px;padding:8px 10px;font-size:14px;cursor:pointer}
+  main{max-width:760px;margin:0 auto;padding:14px 16px 110px}
+  .steps{display:flex;gap:6px;overflow-x:auto;padding:12px 16px 4px;max-width:760px;margin:0 auto;scrollbar-width:none}
+  .steps button{flex:1 0 auto;border:1px solid var(--line);background:#fff;color:var(--muted);border-radius:999px;padding:7px 12px;font-size:13px;cursor:pointer;white-space:nowrap}
+  .steps button.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+  .steps button.ok:not(.on){border-color:var(--accent);color:var(--accent)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:14px}
+  .card h2{font-size:17px;margin:0 0 4px}
+  .card p.hint{margin:0 0 14px;color:var(--muted);font-size:14px}
+  label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin:12px 0 5px}
+  input,textarea,select{width:100%;font:inherit;color:inherit;background:#fff;border:1px solid var(--line);border-radius:10px;padding:11px 12px;outline:none}
+  input:focus,textarea:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(14,159,138,.15)}
+  textarea{resize:vertical;min-height:80px}
+  .row{display:grid;gap:10px;grid-template-columns:1fr 1fr}
+  @media (max-width:520px){.row{grid-template-columns:1fr}}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:12px;padding:12px 16px;font:inherit;font-weight:600;cursor:pointer;background:var(--accent);color:var(--accent-ink);text-decoration:none}
+  .btn.sec{background:#fff;color:var(--ink);border:1px solid var(--line)}
+  .btn.ghost{background:transparent;color:var(--accent);padding:8px 4px}
+  .btn.danger{background:#fff;color:var(--danger);border:1px solid #f1c7c2}
+  .btn.wa{background:#25d366;color:#fff}
+  .btn.block{width:100%}
+  .item{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;position:relative;background:#fbfcfd}
+  .item .x{position:absolute;top:6px;right:6px;border:0;background:transparent;color:var(--muted);font-size:20px;cursor:pointer;line-height:1;padding:4px 8px}
+  .item .num{font-size:12px;font-weight:700;color:var(--accent);margin-bottom:4px}
+  .mat-grid{display:grid;grid-template-columns:90px 90px 1fr;gap:8px;margin-top:8px}
+  .mat-grid label{margin-top:0}
+  .sub{text-align:right;font-size:14px;color:var(--muted);margin-top:8px}
+  .sub b{color:var(--ink)}
+  .totals{border-top:1px dashed var(--line);margin-top:12px;padding-top:10px}
+  .totals div{display:flex;justify-content:space-between;padding:3px 0}
+  .totals .grand{font-size:20px;font-weight:750;color:var(--brand);border-top:1px solid var(--line);margin-top:6px;padding-top:8px}
+  .bar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom));z-index:5}
+  .bar .in{max-width:760px;margin:0 auto;display:flex;gap:10px;align-items:center}
+  .bar .tot{flex:1;font-size:13px;color:var(--muted)}
+  .bar .tot b{display:block;font-size:18px;color:var(--brand)}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .chips button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 10px;font-size:13px;cursor:pointer;color:var(--ink)}
+  .chips button:hover{border-color:var(--accent)}
+  .note{font-size:13px;border-radius:10px;padding:10px 12px;margin:10px 0}
+  .note.warn{background:#fff8e6;color:#7a5410;border:1px solid #f3dfae}
+  .note.ok{background:#e8f7f4;color:#0b6b5d;border:1px solid #bfe7df}
+  .list-q{display:flex;justify-content:space-between;align-items:center;gap:10px;border-bottom:1px solid var(--line);padding:10px 0}
+  .list-q:last-child{border-bottom:0}
+  .list-q small{color:var(--muted);display:block}
+  .hidden{display:none!important}
+  dialog{border:0;border-radius:16px;padding:0;max-width:560px;width:calc(100% - 32px)}
+  dialog::backdrop{background:rgba(10,20,30,.5)}
+  dialog .dh{padding:16px 16px 0;display:flex;justify-content:space-between;align-items:center}
+  dialog .dh h3{margin:0;font-size:17px}
+  dialog .db{padding:4px 16px 16px;max-height:70vh;overflow:auto}
+  dialog .df{padding:12px 16px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end}
+
+  /* ===== Documento (visão do cliente / impressão) ===== */
+  .doc{background:#fff;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+  .doc-head{background:var(--brand);color:#fff;padding:20px}
+  .doc-head .emp{font-size:20px;font-weight:750}
+  .doc-head .meta{opacity:.85;font-size:13px;margin-top:4px}
+  .doc-head .tag{display:inline-block;margin-top:12px;background:rgba(255,255,255,.14);border-radius:8px;padding:5px 10px;font-size:13px}
+  .doc section{padding:16px 20px;border-bottom:1px solid var(--line)}
+  .doc section:last-child{border-bottom:0}
+  .doc h4{margin:0 0 8px;font-size:12px;letter-spacing:.8px;text-transform:uppercase;color:var(--accent)}
+  .doc ol{margin:0;padding-left:20px}
+  .doc ol li{margin:4px 0}
+  .doc table{width:100%;border-collapse:collapse;font-size:14px}
+  .doc th{text-align:left;font-size:12px;color:var(--muted);font-weight:600;border-bottom:1px solid var(--line);padding:6px 4px}
+  .doc td{border-bottom:1px solid #eef1f4;padding:7px 4px;vertical-align:top}
+  .doc td.n,.doc th.n{text-align:right;white-space:nowrap}
+  .doc .pre{white-space:pre-wrap}
+  .decide{padding:20px;background:#f7faf9}
+  .decide .btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+  @media (max-width:520px){.decide .btns{grid-template-columns:1fr}}
+  .foot{text-align:center;color:var(--muted);font-size:12px;margin:18px 0}
+
+  @media print{
+    header.top,.steps,.bar,.no-print,.decide{display:none!important}
+    body{background:#fff}
+    main{padding:0;max-width:none}
+    .doc{border:0;border-radius:0}
+    .doc-head{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= EDITOR ================= -->
+<div id="editor" class="hidden">
+  <header class="top">
+    <h1 id="topTitle">Novo orçamento</h1>
+    <button onclick="openSaved()" title="Orçamentos salvos">📂 Salvos</button>
+    <button onclick="openProfile()" title="Meus dados">⚙️</button>
+  </header>
+
+  <nav class="steps" id="steps"></nav>
+
+  <main>
+    <!-- 1. Cliente -->
+    <div class="step" data-step="0">
+      <div class="card">
+        <h2>Dados do cliente (tomador do serviço)</h2>
+        <p class="hint">Quem vai receber o orçamento. O WhatsApp é usado no envio.</p>
+        <label for="c_nome">Nome / Razão social *</label>
+        <input id="c_nome" data-f="cli.nome" autocomplete="off" placeholder="Ex.: Condomínio Solar das Palmeiras">
+        <div class="row">
+          <div><label for="c_doc">CPF / CNPJ</label><input id="c_doc" data-f="cli.doc" inputmode="numeric" placeholder="Opcional"></div>
+          <div><label for="c_contato">Contato / responsável</label><input id="c_contato" data-f="cli.contato" placeholder="Ex.: Sr. João (síndico)"></div>
+        </div>
+        <div class="row">
+          <div><label for="c_wa">WhatsApp *</label><input id="c_wa" data-f="cli.wa" inputmode="tel" placeholder="(81) 99999-9999"></div>
+          <div><label for="c_email">E-mail</label><input id="c_email" data-f="cli.email" inputmode="email" placeholder="Opcional"></div>
+        </div>
+        <label for="c_end">Endereço do serviço</label>
+        <input id="c_end" data-f="cli.end" placeholder="Rua, número, bairro, cidade">
+      </div>
+    </div>
+
+    <!-- 2. Serviços -->
+    <div class="step" data-step="1">
+      <div class="card">
+        <h2>Serviços que serão realizados</h2>
+        <p class="hint">Descreva cada serviço. Toque numa sugestão para adicionar rápido.</p>
+        <div id="servList"></div>
+        <button class="btn sec block" onclick="addServ()">+ Adicionar serviço</button>
+        <label>Sugestões</label>
+        <div class="chips" id="servChips"></div>
+      </div>
+      <div class="card">
+        <h2>Mão de obra</h2>
+        <p class="hint">Valor dos serviços (sem os materiais). Deixe 0 se já estiver embutido.</p>
+        <label for="q_mo">Valor da mão de obra (R$)</label>
+        <input id="q_mo" data-f="mo" data-money inputmode="decimal" placeholder="0,00">
+      </div>
+    </div>
+
+    <!-- 3. Materiais -->
+    <div class="step" data-step="2">
+      <div class="card">
+        <h2>Materiais</h2>
+        <p class="hint">Liste os materiais com quantidade e valor unitário. O total é calculado sozinho.</p>
+        <div id="matList"></div>
+        <button class="btn sec block" onclick="addMat()">+ Adicionar material</button>
+        <div class="totals" id="totBox"></div>
+      </div>
+    </div>
+
+    <!-- 4. Pagamento -->
+    <div class="step" data-step="3">
+      <div class="card">
+        <h2>Condições de pagamento</h2>
+        <p class="hint">Toque numa opção pronta ou escreva do seu jeito.</p>
+        <div class="chips" id="pagChips"></div>
+        <label for="q_pag">Condições</label>
+        <textarea id="q_pag" data-f="pag" rows="3" placeholder="Ex.: 50% na aprovação e 50% na conclusão, via PIX."></textarea>
+        <div class="row">
+          <div><label for="q_desc">Desconto (R$)</label><input id="q_desc" data-f="desc" data-money inputmode="decimal" placeholder="0,00"></div>
+          <div><label for="q_val">Validade do orçamento (dias)</label><input id="q_val" data-f="val" inputmode="numeric" placeholder="15"></div>
+        </div>
+        <div class="row">
+          <div><label for="q_prazo">Prazo de execução</label><input id="q_prazo" data-f="prazo" placeholder="Ex.: 2 dias úteis"></div>
+          <div><label for="q_gar">Garantia</label><input id="q_gar" data-f="gar" placeholder="Ex.: 90 dias sobre o serviço"></div>
+        </div>
+        <label for="q_obs">Observações</label>
+        <textarea id="q_obs" data-f="obs" rows="2" placeholder="Opcional"></textarea>
+      </div>
+    </div>
+
+    <!-- 5. Enviar -->
+    <div class="step" data-step="4">
+      <div class="card">
+        <h2>Mensagem para o cliente</h2>
+        <p class="hint">Já vem pronta em tom profissional. Pode editar à vontade.</p>
+        <textarea id="q_msg" rows="12"></textarea>
+        <button class="btn ghost" onclick="resetMsg()">↺ Refazer mensagem padrão</button>
+        <div id="linkNote"></div>
+        <div style="display:grid;gap:10px;margin-top:8px">
+          <button class="btn wa block" onclick="sendWA()">📲 Enviar pelo WhatsApp</button>
+          <div class="row">
+            <button class="btn sec" onclick="preview()">👁 Ver como o cliente vê</button>
+            <button class="btn sec" onclick="copyLink()">🔗 Copiar link</button>
+          </div>
+          <div class="row">
+            <button class="btn sec" onclick="saveQuote(true)">💾 Salvar orçamento</button>
+            <button class="btn sec" onclick="newQuote()">＋ Novo orçamento</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Resumo</h2>
+        <div id="summary"></div>
+      </div>
+    </div>
+  </main>
+
+  <div class="bar">
+    <div class="in">
+      <button class="btn sec" id="btnPrev" onclick="go(cur-1)">‹ Voltar</button>
+      <div class="tot">Total<b id="barTot">R$ 0,00</b></div>
+      <button class="btn" id="btnNext" onclick="go(cur+1)">Avançar ›</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= VISÃO DO CLIENTE ================= -->
+<div id="viewer" class="hidden">
+  <header class="top no-print" id="viewTop">
+    <h1>Orçamento</h1>
+    <button onclick="window.print()">🖨 PDF</button>
+    <button id="backEdit" class="hidden" onclick="closePreview()">✕ Fechar</button>
+  </header>
+  <main id="viewMain"></main>
+</div>
+
+<!-- Meus dados -->
+<dialog id="dlgProfile">
+  <div class="dh"><h3>Meus dados (prestador)</h3><button class="btn ghost" onclick="dlgProfile.close()">✕</button></div>
+  <div class="db">
+    <p class="hint" style="color:var(--muted);font-size:14px">Preencha uma vez. Aparece no orçamento e é para este WhatsApp que chega a resposta do cliente.</p>
+    <label for="p_emp">Nome da empresa / profissional *</label><input id="p_emp" data-p="emp" placeholder="Ex.: Silva Segurança Eletrônica">
+    <div class="row">
+      <div><label for="p_resp">Seu nome *</label><input id="p_resp" data-p="resp" placeholder="Ex.: Carlos Silva"></div>
+      <div><label for="p_doc">CNPJ / CPF</label><input id="p_doc" data-p="doc" inputmode="numeric"></div>
+    </div>
+    <div class="row">
+      <div><label for="p_wa">Seu WhatsApp *</label><input id="p_wa" data-p="wa" inputmode="tel" placeholder="(81) 99999-9999"></div>
+      <div><label for="p_email">E-mail</label><input id="p_email" data-p="email" inputmode="email"></div>
+    </div>
+    <label for="p_ramo">Ramo (aparece no orçamento)</label><input id="p_ramo" data-p="ramo" placeholder="Manutenção de CFTV, alarmes e automação">
+    <label for="p_url">Endereço público do app (para o link do cliente)</label>
+    <input id="p_url" data-p="url" inputmode="url" placeholder="https://seuusuario.github.io/orcamento/">
+    <p style="font-size:12px;color:var(--muted);margin:6px 0 0">Se o app já estiver aberto num endereço https, deixe em branco que ele usa o endereço atual.</p>
+  </div>
+  <div class="df"><button class="btn" onclick="saveProfile()">Salvar</button></div>
+</dialog>
+
+<!-- Salvos -->
+<dialog id="dlgSaved">
+  <div class="dh"><h3>Orçamentos salvos</h3><button class="btn ghost" onclick="dlgSaved.close()">✕</button></div>
+  <div class="db" id="savedList"></div>
+</dialog>
+
+<!-- Decisão do cliente -->
+<dialog id="dlgDecide">
+  <div class="dh"><h3 id="decTitle"></h3><button class="btn ghost" onclick="dlgDecide.close()">✕</button></div>
+  <div class="db">
+    <p id="decText" style="margin-top:8px"></p>
+    <label for="decName">Seu nome</label><input id="decName">
+    <label for="decObs" id="decObsLbl">Comentário (opcional)</label><textarea id="decObs" rows="3"></textarea>
+  </div>
+  <div class="df"><button class="btn sec" onclick="dlgDecide.close()">Cancelar</button><button class="btn wa" id="decGo">Enviar resposta pelo WhatsApp</button></div>
+</dialog>
+
+<script>
+/* ============ utilidades ============ */
+const $ = s => document.querySelector(s);
+const LS = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+};
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const brl = n => (Number(n)||0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+function num(v){
+  if (typeof v === 'number') return v;
+  let s = String(v ?? '').trim().replace(/[^\d,.-]/g, '');
+  if (!s) return 0;
+  if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
+  const n = parseFloat(s); return isNaN(n) ? 0 : n;
+}
+function phone(v){
+  let d = String(v ?? '').replace(/\D/g, '');
+  if (!d) return '';
+  if (d.startsWith('0')) d = d.replace(/^0+/, '');
+  if (d.length === 10 || d.length === 11) d = '55' + d;
+  return d;
+}
+const today = () => new Date().toLocaleDateString('pt-BR');
+function addDays(br, days){
+  const [d,m,y] = br.split('/').map(Number); const dt = new Date(y, m-1, d);
+  dt.setDate(dt.getDate() + (Number(days)||0)); return dt.toLocaleDateString('pt-BR');
+}
+function toast(msg){
+  const t = document.createElement('div');
+  t.textContent = msg;
+  t.style.cssText = 'position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#15202b;color:#fff;padding:10px 16px;border-radius:10px;z-index:99;font-size:14px;box-shadow:0 6px 20px rgba(0,0,0,.2)';
+  document.body.appendChild(t); setTimeout(() => t.remove(), 2200);
+}
+
+/* ============ codificação do link (dados vão no # e não passam por servidor) ============ */
+const b64u = bytes => { let s=''; bytes.forEach(b => s += String.fromCharCode(b)); return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); };
+const unb64u = str => { str = str.replace(/-/g,'+').replace(/_/g,'/'); while (str.length % 4) str += '='; const bin = atob(str); return Uint8Array.from(bin, c => c.charCodeAt(0)); };
+async function encode(obj){
+  const raw = new TextEncoder().encode(JSON.stringify(obj));
+  if ('CompressionStream' in window){
+    const cs = new Blob([raw]).stream().pipeThrough(new CompressionStream('deflate-raw'));
+    return 'z' + b64u(new Uint8Array(await new Response(cs).arrayBuffer()));
+  }
+  return 'j' + b64u(raw);
+}
+async function decode(str){
+  const kind = str[0], bytes = unb64u(str.slice(1));
+  if (kind === 'z'){
+    const ds = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+    return JSON.parse(await new Response(ds).text());
+  }
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+
+/* ============ estado ============ */
+const STEPS = ['1 Cliente', '2 Serviços', '3 Materiais', '4 Pagamento', '5 Enviar'];
+const SERV_SUG = [
+  'Manutenção preventiva do sistema de CFTV (limpeza de câmeras, ajuste de foco e ângulo)',
+  'Substituição de câmera com defeito',
+  'Verificação e configuração do DVR/NVR e HD de gravação',
+  'Configuração de acesso remoto pelo celular',
+  'Revisão de cabeamento, conectores e fontes de alimentação',
+  'Manutenção da central de alarme e sensores',
+  'Manutenção de motor de portão automático',
+  'Manutenção de controle de acesso / interfone',
+  'Configuração de automação residencial (iluminação, tomadas, cenas)',
+  'Teste geral de funcionamento e orientação ao cliente'
+];
+const PAG_SUG = [
+  'À vista via PIX na conclusão do serviço.',
+  '50% na aprovação e 50% na conclusão, via PIX.',
+  'Cartão de crédito em até 3x sem juros.',
+  'Boleto com vencimento em 7 dias após a conclusão.'
+];
+let prof = LS.get('orc.prof', {});
+let q, cur = 0;
+
+function blankQuote(){
+  const cnt = LS.get('orc.seq', 0) + 1;
+  return {
+    id: Date.now().toString(36),
+    n: new Date().getFullYear() + '-' + String(cnt).padStart(3, '0'),
+    seq: cnt, data: today(),
+    cli: {}, serv: [{d:''}], mat: [{d:'', q:1, u:'un', v:''}],
+    mo: '', desc: '', pag: '', val: '15', prazo: '', gar: '', obs: '', msg: ''
+  };
+}
+function calc(x = q){
+  const mat = (x.mat||[]).reduce((s,m) => s + num(m.q) * num(m.v), 0);
+  const mo = num(x.mo), desc = num(x.desc);
+  return { mat, mo, desc, total: Math.max(0, mat + mo - desc) };
+}
+const getF = (path, o = q) => path.split('.').reduce((a,k) => a?.[k], o);
+function setF(path, v, o = q){ const ks = path.split('.'); let t = o; ks.slice(0,-1).forEach(k => t = t[k] ??= {}); t[ks.at(-1)] = v; }
+const persist = () => LS.set('orc.draft', q);
+
+/* ============ editor ============ */
+function renderSteps(){
+  const done = [ !!(q.cli.nome && q.cli.wa), q.serv.some(s => s.d.trim()), q.mat.some(m => m.d.trim()) || num(q.mo) > 0, !!q.pag.trim(), false ];
+  $('#steps').innerHTML = STEPS.map((s,i) => `<button class="${i===cur?'on':''} ${done[i]?'ok':''}" onclick="go(${i})">${done[i]&&i!==cur?'✓ ':''}${s}</button>`).join('');
+}
+function go(i){
+  if (i < 0 || i >= STEPS.length) return;
+  if (i > 0 && cur === 0 && (!q.cli.nome || !q.cli.wa)){ toast('Preencha nome e WhatsApp do cliente'); $('#c_nome').focus(); return; }
+  cur = i;
+  document.querySelectorAll('.step').forEach(el => el.classList.toggle('hidden', +el.dataset.step !== i));
+  $('#btnPrev').style.visibility = i === 0 ? 'hidden' : 'visible';
+  $('#btnNext').classList.toggle('hidden', i === STEPS.length - 1);
+  if (i === 4) renderSend();
+  renderSteps(); window.scrollTo({top:0, behavior:'smooth'});
+}
+function bindFields(){
+  document.querySelectorAll('[data-f]').forEach(el => {
+    el.value = getF(el.dataset.f) ?? '';
+    el.oninput = () => { setF(el.dataset.f, el.value); if (el.dataset.f === 'val' || el.hasAttribute('data-money')) renderTotals(); persist(); renderSteps(); };
+    if (el.hasAttribute('data-money')) el.onblur = () => { if (el.value.trim()) el.value = num(el.value).toLocaleString('pt-BR',{minimumFractionDigits:2}); };
+  });
+  $('#topTitle').textContent = 'Orçamento nº ' + q.n;
+}
+function renderServ(){
+  $('#servList').innerHTML = q.serv.map((s,i) => `
+    <div class="item"><div class="num">Serviço ${i+1}</div>
+      <button class="x" onclick="delServ(${i})" aria-label="Remover">×</button>
+      <textarea rows="2" oninput="q.serv[${i}].d=this.value;persist();renderSteps()" placeholder="Descreva o serviço">${esc(s.d)}</textarea>
+    </div>`).join('');
+}
+function addServ(txt = ''){
+  const empty = q.serv.findIndex(s => !s.d.trim());
+  if (txt && empty >= 0) q.serv[empty].d = txt; else q.serv.push({d: txt});
+  persist(); renderServ(); renderSteps();
+  if (!txt) document.querySelectorAll('#servList textarea')[q.serv.length-1].focus();
+}
+function delServ(i){ q.serv.splice(i,1); if (!q.serv.length) q.serv.push({d:''}); persist(); renderServ(); renderSteps(); }
+
+function renderMat(){
+  $('#matList').innerHTML = q.mat.map((m,i) => `
+    <div class="item"><div class="num">Material ${i+1}</div>
+      <button class="x" onclick="delMat(${i})" aria-label="Remover">×</button>
+      <input value="${esc(m.d)}" placeholder="Descrição (ex.: Câmera bullet 2MP)" oninput="q.mat[${i}].d=this.value;persist();renderSteps()">
+      <div class="mat-grid">
+        <div><label>Qtd.</label><input value="${esc(m.q)}" inputmode="decimal" oninput="q.mat[${i}].q=this.value;upMat(${i})"></div>
+        <div><label>Unid.</label><input value="${esc(m.u)}" placeholder="un, m, cx" oninput="q.mat[${i}].u=this.value;persist()"></div>
+        <div><label>Valor unit. (R$)</label><input value="${esc(m.v)}" inputmode="decimal" placeholder="0,00" oninput="q.mat[${i}].v=this.value;upMat(${i})"></div>
+      </div>
+      <div class="sub" id="sub${i}">Subtotal: <b>${brl(num(m.q)*num(m.v))}</b></div>
+    </div>`).join('');
+  renderTotals();
+}
+function upMat(i){ $('#sub'+i).innerHTML = `Subtotal: <b>${brl(num(q.mat[i].q)*num(q.mat[i].v))}</b>`; persist(); renderTotals(); }
+function addMat(){ q.mat.push({d:'', q:1, u:'un', v:''}); persist(); renderMat(); document.querySelectorAll('#matList .item')[q.mat.length-1].querySelector('input').focus(); }
+function delMat(i){ q.mat.splice(i,1); if (!q.mat.length) q.mat.push({d:'', q:1, u:'un', v:''}); persist(); renderMat(); renderSteps(); }
+
+function renderTotals(){
+  const t = calc();
+  $('#totBox').innerHTML = `
+    <div><span>Materiais</span><b>${brl(t.mat)}</b></div>
+    <div><span>Mão de obra</span><b>${brl(t.mo)}</b></div>
+    ${t.desc ? `<div><span>Desconto</span><b>− ${brl(t.desc)}</b></div>` : ''}
+    <div class="grand"><span>Total</span><span>${brl(t.total)}</span></div>`;
+  $('#barTot').textContent = brl(t.total);
+}
+
+/* ============ mensagem e envio ============ */
+function defaultMsg(link){
+  const t = calc(), c = q.cli;
+  const saud = (c.contato || c.nome || '').split(' ')[0] || '';
+  const val = q.val ? `\n🗓 Validade: ${q.val} dias (até ${addDays(q.data, q.val)})` : '';
+  return `Olá${saud ? ', ' + saud : ''}! Tudo bem?
+
+Conforme conversamos, segue o orçamento nº ${q.n} referente aos serviços de manutenção do seu sistema${c.end ? ' no endereço ' + c.end : ''}.
+
+💰 Valor total: ${brl(t.total)}${val}
+
+📄 No link abaixo você confere todos os detalhes (serviços, materiais e condições de pagamento) e pode autorizar a execução com um toque:
+${link || '[o link do orçamento entra aqui]'}
+
+Fico à disposição para qualquer esclarecimento que se fizer necessário.
+
+Atenciosamente,
+${prof.resp || ''}${prof.emp ? '\n' + prof.emp : ''}`;
+}
+function baseURL(){
+  if (prof.url) return prof.url.split('#')[0];
+  if (location.protocol.startsWith('http')) return location.href.split('#')[0].split('?')[0];
+  return '';
+}
+async function buildLink(){
+  const payload = { p: { emp:prof.emp, resp:prof.resp, doc:prof.doc, wa:prof.wa, email:prof.email, ramo:prof.ramo }, q: {...q, msg: undefined, id: undefined, seq: undefined} };
+  return baseURL() + '#o=' + await encode(payload);
+}
+let lastLink = '';
+async function renderSend(){
+  lastLink = await buildLink();
+  const hasPublic = /^https?:/.test(lastLink) && !/localhost|127\.0\.0\.1/.test(lastLink);
+  if (!q.msg || q.msg.includes('[o link do orçamento entra aqui]') || q._auto) { q.msg = defaultMsg(hasPublic ? lastLink : ''); q._auto = true; }
+  else if (q._lastLink && q.msg.includes(q._lastLink)) q.msg = q.msg.replace(q._lastLink, lastLink);
+  q._lastLink = lastLink;
+  $('#q_msg').value = q.msg; persist();
+  $('#q_msg').oninput = e => { q.msg = e.target.value; q._auto = false; persist(); };
+  const miss = [];
+  if (!prof.emp || !prof.resp) miss.push('seu nome e empresa');
+  if (!prof.wa) miss.push('seu WhatsApp (é para ele que o cliente responde)');
+  $('#linkNote').innerHTML =
+    (miss.length ? `<div class="note warn">⚠️ Falta preencher em <a href="#" onclick="openProfile();return false">⚙️ Meus dados</a>: ${miss.join(' e ')}.</div>` : '') +
+    (hasPublic ? `<div class="note ok">✅ O cliente vai abrir o orçamento pelo link e responder <b>Concordo</b> ou <b>Discordo</b> direto no seu WhatsApp.</div>`
+               : `<div class="note warn">⚠️ O app ainda não está num endereço público, então o link não abre no celular do cliente. Enquanto isso, a mensagem vai com o orçamento completo em texto e pede para ele responder <b>CONCORDO</b> ou <b>DISCORDO</b>.</div>`);
+  renderSummary();
+}
+function resetMsg(){ q.msg = ''; q._auto = true; renderSend(); }
+function textQuote(){
+  const t = calc(); const L = [];
+  L.push(`*ORÇAMENTO Nº ${q.n}* — ${q.data}`, `${prof.emp || ''}`, '');
+  L.push('*Serviços:*'); q.serv.filter(s => s.d.trim()).forEach((s,i) => L.push(`${i+1}. ${s.d.trim()}`));
+  const mats = q.mat.filter(m => m.d.trim());
+  if (mats.length){ L.push('', '*Materiais:*'); mats.forEach(m => L.push(`• ${m.d.trim()} — ${num(m.q)} ${m.u||''} × ${brl(num(m.v))} = ${brl(num(m.q)*num(m.v))}`)); }
+  L.push('', `Materiais: ${brl(t.mat)}`, `Mão de obra: ${brl(t.mo)}`); if (t.desc) L.push(`Desconto: − ${brl(t.desc)}`);
+  L.push(`*TOTAL: ${brl(t.total)}*`, '');
+  if (q.pag) L.push(`*Pagamento:* ${q.pag}`);
+  if (q.prazo) L.push(`*Prazo:* ${q.prazo}`);
+  if (q.gar) L.push(`*Garantia:* ${q.gar}`);
+  if (q.obs) L.push(`*Obs.:* ${q.obs}`);
+  L.push('', '👉 Para autorizar a execução, responda *CONCORDO*. Se não estiver de acordo, responda *DISCORDO*.');
+  return L.join('\n');
+}
+function sendWA(){
+  const to = phone(q.cli.wa);
+  if (!to){ toast('WhatsApp do cliente inválido'); go(0); return; }
+  let msg = $('#q_msg').value;
+  if (!/^https?:/.test(lastLink) || /localhost|127\.0\.0\.1/.test(lastLink)) msg += '\n\n' + textQuote();
+  saveQuote(false, 'enviado');
+  window.open(`https://wa.me/${to}?text=${encodeURIComponent(msg)}`, '_blank');
+}
+async function copyLink(){
+  try{ await navigator.clipboard.writeText(lastLink || await buildLink()); toast('Link copiado'); }
+  catch(e){ prompt('Copie o link:', lastLink); }
+}
+function renderSummary(){
+  const t = calc();
+  $('#summary').innerHTML = `
+    <div class="totals" style="border:0;margin:0;padding:0">
+      <div><span>Cliente</span><b>${esc(q.cli.nome||'—')}</b></div>
+      <div><span>Serviços</span><b>${q.serv.filter(s=>s.d.trim()).length}</b></div>
+      <div><span>Materiais</span><b>${brl(t.mat)}</b></div>
+      <div><span>Mão de obra</span><b>${brl(t.mo)}</b></div>
+      ${t.desc?`<div><span>Desconto</span><b>− ${brl(t.desc)}</b></div>`:''}
+      <div class="grand"><span>Total</span><span>${brl(t.total)}</span></div>
+    </div>`;
+}
+
+/* ============ salvos / perfil ============ */
+function saveQuote(showToast, status){
+  const all = LS.get('orc.quotes', []);
+  const i = all.findIndex(x => x.id === q.id);
+  const rec = {...q, status: status || all[i]?.status || 'rascunho', total: calc().total, savedAt: new Date().toISOString()};
+  if (i >= 0) all[i] = rec; else { all.unshift(rec); LS.set('orc.seq', Math.max(LS.get('orc.seq',0), q.seq)); }
+  LS.set('orc.quotes', all);
+  if (showToast) toast('Orçamento salvo');
+}
+function openSaved(){
+  const all = LS.get('orc.quotes', []);
+  const tag = s => ({rascunho:'📝 rascunho', enviado:'📤 enviado', aprovado:'✅ aprovado', recusado:'❌ recusado'}[s] || s);
+  $('#savedList').innerHTML = all.length ? all.map(x => `
+    <div class="list-q">
+      <div><b>${esc(x.n)}</b> · ${esc(x.cli?.nome || 'sem cliente')}<small>${esc(x.data)} · ${brl(x.total)} · ${tag(x.status)}</small></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+        <select onchange="setStatus('${x.id}',this.value)" style="width:auto;padding:6px 8px;font-size:13px">
+          ${['rascunho','enviado','aprovado','recusado'].map(s => `<option ${s===x.status?'selected':''} value="${s}">${s}</option>`).join('')}
+        </select>
+        <button class="btn sec" style="padding:7px 10px" onclick="loadQuote('${x.id}')">Abrir</button>
+        <button class="btn sec" style="padding:7px 10px" title="Duplicar" onclick="dupQuote('${x.id}')">⧉</button>
+        <button class="btn danger" style="padding:7px 10px" onclick="delQuote('${x.id}')">🗑</button>
+      </div>
+    </div>`).join('') : '<p style="color:var(--muted)">Nenhum orçamento salvo ainda.</p>';
+  dlgSaved.showModal();
+}
+function setStatus(id, s){ const all = LS.get('orc.quotes', []); const x = all.find(y => y.id === id); if (x){ x.status = s; LS.set('orc.quotes', all); openSaved(); } }
+function loadQuote(id){ const x = LS.get('orc.quotes', []).find(y => y.id === id); if (!x) return; q = structuredClone(x); persist(); startEditor(); dlgSaved.close(); }
+function dupQuote(id){
+  const x = LS.get('orc.quotes', []).find(y => y.id === id); if (!x) return;
+  const b = blankQuote(); q = {...structuredClone(x), id:b.id, n:b.n, seq:b.seq, data:b.data, msg:'', status:undefined, _auto:true};
+  persist(); startEditor(); dlgSaved.close(); toast('Cópia criada: nº ' + q.n);
+}
+function delQuote(id){ if (!confirm('Excluir este orçamento?')) return; LS.set('orc.quotes', LS.get('orc.quotes', []).filter(y => y.id !== id)); openSaved(); }
+function newQuote(){ if (q.cli.nome) saveQuote(false); q = blankQuote(); persist(); startEditor(); toast('Novo orçamento nº ' + q.n); }
+function openProfile(){ document.querySelectorAll('[data-p]').forEach(el => el.value = prof[el.dataset.p] ?? ''); dlgProfile.showModal(); }
+function saveProfile(){
+  document.querySelectorAll('[data-p]').forEach(el => prof[el.dataset.p] = el.value.trim());
+  if (!prof.emp || !prof.resp || !prof.wa){ toast('Preencha empresa, seu nome e WhatsApp'); return; }
+  LS.set('orc.prof', prof); dlgProfile.close(); toast('Dados salvos'); if (cur === 4) renderSend();
+}
+
+/* ============ documento (cliente) ============ */
+function docHTML(p, x, clientMode){
+  const t = calc(x); const c = x.cli || {};
+  const mats = (x.mat||[]).filter(m => (m.d||'').trim());
+  const servs = (x.serv||[]).filter(s => (s.d||'').trim());
+  const line = (k,v) => v ? `<div><b>${k}:</b> ${esc(v)}</div>` : '';
+  return `
+  <div class="doc">
+    <div class="doc-head">
+      <div class="emp">${esc(p.emp || 'Prestador')}</div>
+      <div class="meta">${esc(p.ramo || '')}${p.doc ? ' · ' + esc(p.doc) : ''}</div>
+      <div class="meta">${esc(p.resp || '')}${p.wa ? ' · WhatsApp ' + esc(p.wa) : ''}${p.email ? ' · ' + esc(p.email) : ''}</div>
+      <div class="tag">Orçamento nº ${esc(x.n)} · ${esc(x.data)}${x.val ? ' · válido até ' + addDays(x.data, x.val) : ''}</div>
+    </div>
+    <section><h4>Cliente</h4>
+      <div><b>${esc(c.nome || '')}</b></div>
+      ${line('CPF/CNPJ', c.doc)}${line('Contato', c.contato)}${line('Endereço', c.end)}${line('WhatsApp', c.wa)}${line('E-mail', c.email)}
+    </section>
+    ${servs.length ? `<section><h4>Serviços a realizar</h4><ol>${servs.map(s => `<li class="pre">${esc(s.d.trim())}</li>`).join('')}</ol></section>` : ''}
+    ${mats.length ? `<section><h4>Materiais</h4>
+      <table><thead><tr><th>Descrição</th><th class="n">Qtd.</th><th class="n">Unit.</th><th class="n">Total</th></tr></thead>
+      <tbody>${mats.map(m => `<tr><td>${esc(m.d)}</td><td class="n">${num(m.q).toLocaleString('pt-BR')} ${esc(m.u||'')}</td><td class="n">${brl(num(m.v))}</td><td class="n">${brl(num(m.q)*num(m.v))}</td></tr>`).join('')}</tbody></table>
+    </section>` : ''}
+    <section><h4>Valores</h4>
+      <div class="totals" style="border:0;margin:0;padding:0">
+        <div><span>Materiais</span><b>${brl(t.mat)}</b></div>
+        <div><span>Mão de obra</span><b>${brl(t.mo)}</b></div>
+        ${t.desc ? `<div><span>Desconto</span><b>− ${brl(t.desc)}</b></div>` : ''}
+        <div class="grand"><span>Total</span><span>${brl(t.total)}</span></div>
+      </div>
+    </section>
+    <section><h4>Condições</h4>
+      ${line('Pagamento', x.pag)}${line('Prazo de execução', x.prazo)}${line('Garantia', x.gar)}${line('Validade', x.val ? x.val + ' dias' : '')}${line('Observações', x.obs)}
+      <p style="margin:12px 0 0;color:var(--muted);font-size:14px">Permanecemos à disposição para qualquer esclarecimento que se fizer necessário.</p>
+    </section>
+    ${clientMode ? `<div class="decide">
+      <h4 style="margin:0;font-size:12px;letter-spacing:.8px;text-transform:uppercase;color:var(--accent)">Autorização</h4>
+      <p style="margin:6px 0 0">Está de acordo com este orçamento? Sua resposta vai direto para o WhatsApp de ${esc(p.resp || 'prestador')}.</p>
+      <div class="btns">
+        <button class="btn wa" onclick="decide(true)">✅ Concordo e autorizo</button>
+        <button class="btn danger" onclick="decide(false)">✖ Discordo</button>
+      </div>
+    </div>` : ''}
+  </div>`;
+}
+let viewData = null;
+function decide(ok){
+  const { p, q: x } = viewData;
+  $('#decTitle').textContent = ok ? 'Autorizar execução' : 'Não concordo';
+  $('#decText').textContent = ok
+    ? `Ao confirmar, você autoriza a execução dos serviços do orçamento nº ${x.n}, no valor de ${brl(calc(x).total)}, nas condições descritas.`
+    : `Tudo bem! Se quiser, conte o motivo — isso ajuda a ajustar a proposta.`;
+  $('#decObsLbl').textContent = ok ? 'Comentário (opcional)' : 'Motivo (opcional)';
+  $('#decName').value = x.cli?.contato || x.cli?.nome || '';
+  $('#decObs').value = '';
+  $('#decGo').className = ok ? 'btn wa' : 'btn danger';
+  $('#decGo').onclick = () => {
+    const nome = $('#decName').value.trim(), obs = $('#decObs').value.trim();
+    const agora = new Date().toLocaleString('pt-BR', {dateStyle:'short', timeStyle:'short'});
+    const msg = ok
+      ? `✅ *CONCORDO*\n\nOlá, ${p.resp || ''}! Autorizo a execução dos serviços conforme o orçamento nº ${x.n}, no valor de ${brl(calc(x).total)}.\n\nNome: ${nome}\nData: ${agora}${obs ? '\nComentário: ' + obs : ''}`
+      : `❌ *DISCORDO*\n\nOlá, ${p.resp || ''}. Não estou de acordo com o orçamento nº ${x.n}.${obs ? '\nMotivo: ' + obs : ''}\n\nNome: ${nome}`;
+    const to = phone(p.wa);
+    window.open(to ? `https://wa.me/${to}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+    dlgDecide.close();
+  };
+  dlgDecide.showModal();
+}
+function showDoc(p, x, clientMode){
+  viewData = { p, q: x };
+  $('#viewMain').innerHTML = docHTML(p, x, clientMode) + `<div class="foot no-print">Orçamento gerado digitalmente · ${esc(p.emp || '')}</div>`;
+  document.title = `Orçamento ${x.n} — ${p.emp || ''}`;
+  $('#editor').classList.add('hidden'); $('#viewer').classList.remove('hidden');
+  window.scrollTo(0,0);
+}
+function preview(){ showDoc(prof, q, true); $('#backEdit').classList.remove('hidden'); }
+function closePreview(){ $('#viewer').classList.add('hidden'); $('#editor').classList.remove('hidden'); document.title = 'Gerador de Orçamento'; }
+
+/* ============ inicialização ============ */
+function startEditor(){
+  $('#viewer').classList.add('hidden'); $('#editor').classList.remove('hidden');
+  bindFields(); renderServ(); renderMat(); go(0);
+}
+(async function init(){
+  $('#servChips').innerHTML = SERV_SUG.map((s,i) => `<button onclick="addServ(SERV_SUG[${i}])">+ ${esc(s.length > 42 ? s.slice(0,40) + '…' : s)}</button>`).join('');
+  $('#pagChips').innerHTML = PAG_SUG.map((s,i) => `<button onclick="q.pag=PAG_SUG[${i}];$('#q_pag').value=q.pag;persist();renderSteps()">${esc(s)}</button>`).join('');
+  const h = location.hash;
+  if (h.startsWith('#o=')){
+    try{ const d = await decode(h.slice(3)); showDoc(d.p || {}, d.q, true); }
+    catch(e){ $('#viewer').classList.remove('hidden'); $('#viewMain').innerHTML = '<div class="card"><h2>Link inválido</h2><p class="hint">Este link de orçamento está incompleto. Peça ao prestador para enviar novamente.</p></div>'; }
+    return;
+  }
+  q = LS.get('orc.draft', null) || blankQuote();
+  startEditor();
+  if (!prof.emp) setTimeout(openProfile, 300);
+})();
+</script>
+</body>
+</html>
