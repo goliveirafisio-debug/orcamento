@@ -106,6 +106,8 @@
   .pd-head{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:10px;border-bottom:2px solid #0f2233}
   .pd-brand{display:flex;align-items:center;gap:10px}
   .pd-brand .nm{font-size:14pt;font-weight:700;letter-spacing:.6px;color:#0f2233;text-transform:uppercase;line-height:1.1}
+  .pd-slogan{font-size:8.5pt;font-style:italic;color:#0e7f6f;letter-spacing:.4px;margin-top:5px}
+  .doc-head .slogan{font-size:13px;font-style:italic;color:#5fd3c1;margin-top:6px;letter-spacing:.3px}
   .pd-brand .rm{font-size:8pt;color:#5d6b79;letter-spacing:.3px;margin-top:2px}
   .pd-title{text-align:right}
   .pd-title .t{font-size:17pt;font-weight:300;letter-spacing:4px;color:#0f2233}
@@ -283,6 +285,7 @@
       <div><label for="p_tel">Telefone (rodapé do PDF)</label><input id="p_tel" data-p="tel" inputmode="tel" placeholder="Se vazio, usa o WhatsApp"></div>
       <div><label for="p_insta">Instagram</label><input id="p_insta" data-p="insta" placeholder="@suaempresa"></div>
     </div>
+    <label for="p_slogan">Frase abaixo da logo</label><input id="p_slogan" data-p="slogan" placeholder="Tecnologia ao seu serviço">
     <label for="p_ramo">Ramo (aparece no orçamento)</label><input id="p_ramo" data-p="ramo" placeholder="Manutenção de CFTV, alarmes e automação">
     <label for="p_url">Endereço público do app (para o link do cliente)</label>
     <input id="p_url" data-p="url" inputmode="url" placeholder="https://seuusuario.github.io/orcamento/">
@@ -326,6 +329,7 @@ function LOGO(size = 44, dark = false){
     </g>
   </svg>`;
 }
+const slogan = p => (p.slogan ?? '').trim() || 'Tecnologia ao seu serviço';
 const ICON = {
   tel: '<svg width="10" height="10" viewBox="0 0 24 24" fill="#0f2233"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1z"/></svg>',
   mail: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#0f2233" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>',
@@ -519,7 +523,7 @@ function baseURL(){
   return '';
 }
 async function buildLink(){
-  const payload = { p: { emp:prof.emp, resp:prof.resp, doc:prof.doc, wa:prof.wa, email:prof.email, ramo:prof.ramo, tel:prof.tel, insta:prof.insta }, q: {...q, msg: undefined, id: undefined, seq: undefined} };
+  const payload = { p: { emp:prof.emp, resp:prof.resp, doc:prof.doc, wa:prof.wa, email:prof.email, ramo:prof.ramo, tel:prof.tel, insta:prof.insta, slogan:prof.slogan }, q: {...q, msg: undefined, id: undefined, seq: undefined} };
   return baseURL() + '#o=' + await encode(payload);
 }
 let lastLink = '';
@@ -634,6 +638,7 @@ function docHTML(p, x, clientMode){
     <div class="doc-head">
       <div class="brand">${LOGO(48)}<div><div class="emp">${esc(p.emp || 'Prestador')}</div>
       <div class="meta" style="margin-top:0">${esc(p.ramo || '')}${p.doc ? ' · ' + esc(p.doc) : ''}</div></div></div>
+      <div class="slogan">${esc(slogan(p))}</div>
       <div class="meta">${esc(p.resp || '')}${p.wa ? ' · WhatsApp ' + esc(p.wa) : ''}${p.email ? ' · ' + esc(p.email) : ''}</div>
       <div class="tag">Orçamento nº ${esc(x.n)} · ${esc(x.data)}${x.val ? ' · válido até ' + addDays(x.data, x.val) : ''}</div>
     </div>
@@ -713,7 +718,8 @@ function printHTML(p, x){
   return `
   <table class="pd-wrap"><tbody><tr><td>
     <div class="pd-head">
-      <div class="pd-brand">${LOGO(52)}<div><div class="nm">${esc(p.emp || 'Sua empresa')}</div><div class="rm">${esc(p.ramo || '')}</div></div></div>
+      <div><div class="pd-brand">${LOGO(52)}<div><div class="nm">${esc(p.emp || 'Sua empresa')}</div><div class="rm">${esc(p.ramo || '')}</div></div></div>
+        <div class="pd-slogan">${esc(slogan(p))}</div></div>
       <div class="pd-title"><div class="t">ORÇAMENTO</div>
         <div class="m">Nº <b>${esc(x.n)}</b> · Emissão <b>${esc(x.data)}</b>${x.val ? ` · Válido até <b>${addDays(x.data, x.val)}</b>` : ''}</div></div>
     </div>
