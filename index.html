@@ -89,13 +89,50 @@
   @media (max-width:520px){.decide .btns{grid-template-columns:1fr}}
   .foot{text-align:center;color:var(--muted);font-size:12px;margin:18px 0}
 
+  .doc-head .brand{display:flex;align-items:center;gap:12px}
+  .doc-head .brand svg{flex:0 0 auto}
+  header.top .logo{display:flex;align-items:center}
+
+  /* ===== PDF executivo (só na impressão) ===== */
+  #printDoc{display:none}
+  @page{size:A4;margin:14mm 15mm 8mm}
   @media print{
-    header.top,.steps,.bar,.no-print,.decide{display:none!important}
+    body>*:not(#printDoc){display:none!important}
     body{background:#fff}
-    main{padding:0;max-width:none}
-    .doc{border:0;border-radius:0}
-    .doc-head{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    #printDoc{display:block;color:#1f2a36;font:10pt/1.45 "Segoe UI",Arial,Helvetica,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   }
+  .pd-wrap{width:100%;border-collapse:collapse}
+  .pd-wrap>tbody>tr>td,.pd-wrap>tfoot>tr>td{padding:0}
+  .pd-head{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:10px;border-bottom:2px solid #0f2233}
+  .pd-brand{display:flex;align-items:center;gap:10px}
+  .pd-brand .nm{font-size:14pt;font-weight:700;letter-spacing:.6px;color:#0f2233;text-transform:uppercase;line-height:1.1}
+  .pd-brand .rm{font-size:8pt;color:#5d6b79;letter-spacing:.3px;margin-top:2px}
+  .pd-title{text-align:right}
+  .pd-title .t{font-size:17pt;font-weight:300;letter-spacing:4px;color:#0f2233}
+  .pd-title .m{font-size:8.5pt;color:#5d6b79;margin-top:2px}
+  .pd-title .m b{color:#1f2a36}
+  .pd-sec{margin-top:14px;break-inside:avoid}
+  .pd-sec h5{margin:0 0 6px;font-size:7.5pt;letter-spacing:1.4px;text-transform:uppercase;color:#0e7f6f;font-weight:700;border-bottom:1px solid #d9dfe6;padding-bottom:3px}
+  .pd-kv{display:grid;grid-template-columns:1fr 1fr;gap:3px 24px}
+  .pd-kv div span{color:#5d6b79}
+  .pd-sec ol{margin:0;padding-left:18px}
+  .pd-sec ol li{margin:2px 0;white-space:pre-wrap}
+  .pd-tbl{width:100%;border-collapse:collapse;font-size:9pt}
+  .pd-tbl th{background:#eef1f4;color:#3a4755;font-weight:600;text-align:left;padding:5px 6px;border-bottom:1px solid #c9d1da;font-size:8pt;text-transform:uppercase;letter-spacing:.5px}
+  .pd-tbl td{padding:5px 6px;border-bottom:1px solid #e3e8ed}
+  .pd-tbl .n{text-align:right;white-space:nowrap}
+  .pd-tbl tr{break-inside:avoid}
+  .pd-tot{margin:10px 0 0 auto;width:48%;border-collapse:collapse;font-size:9.5pt;break-inside:avoid}
+  .pd-tot td{padding:4px 8px}
+  .pd-tot td:last-child{text-align:right;white-space:nowrap}
+  .pd-tot tr.g td{background:#0f2233;color:#fff;font-weight:700;font-size:11pt;padding:7px 8px}
+  .pd-close{margin-top:14px;color:#3a4755;break-inside:avoid}
+  .pd-sign{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:38px;break-inside:avoid}
+  .pd-sign div{border-top:1px solid #1f2a36;padding-top:4px;text-align:center;font-size:8.5pt;color:#3a4755}
+  .pd-foot{position:fixed;left:0;right:0;bottom:0;height:13mm;border-top:1px solid #0f2233;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:2px;font-size:8.5pt;color:#3a4755;background:#fff}
+  .pd-foot .c{display:flex;gap:18px;flex-wrap:wrap;justify-content:center}
+  .pd-foot .c span{display:inline-flex;align-items:center;gap:5px}
+  .pd-foot .s{font-size:7.5pt;color:#7a8794}
 </style>
 </head>
 <body>
@@ -103,7 +140,7 @@
 <!-- ================= EDITOR ================= -->
 <div id="editor" class="hidden">
   <header class="top">
-    <h1 id="topTitle">Novo orçamento</h1>
+    <span class="logo" id="topLogo"></span><h1 id="topTitle">Novo orçamento</h1>
     <button onclick="openSaved()" title="Orçamentos salvos">📂 Salvos</button>
     <button onclick="openProfile()" title="Meus dados">⚙️</button>
   </header>
@@ -195,6 +232,7 @@
             <button class="btn sec" onclick="preview()">👁 Ver como o cliente vê</button>
             <button class="btn sec" onclick="copyLink()">🔗 Copiar link</button>
           </div>
+          <button class="btn sec block" onclick="viewData={p:prof,q};printPDF()">📄 Gerar PDF executivo</button>
           <div class="row">
             <button class="btn sec" onclick="saveQuote(true)">💾 Salvar orçamento</button>
             <button class="btn sec" onclick="newQuote()">＋ Novo orçamento</button>
@@ -221,7 +259,7 @@
 <div id="viewer" class="hidden">
   <header class="top no-print" id="viewTop">
     <h1>Orçamento</h1>
-    <button onclick="window.print()">🖨 PDF</button>
+    <button onclick="printPDF()">📄 Baixar PDF</button>
     <button id="backEdit" class="hidden" onclick="closePreview()">✕ Fechar</button>
   </header>
   <main id="viewMain"></main>
@@ -240,6 +278,10 @@
     <div class="row">
       <div><label for="p_wa">Seu WhatsApp *</label><input id="p_wa" data-p="wa" inputmode="tel" placeholder="(81) 99999-9999"></div>
       <div><label for="p_email">E-mail</label><input id="p_email" data-p="email" inputmode="email"></div>
+    </div>
+    <div class="row">
+      <div><label for="p_tel">Telefone (rodapé do PDF)</label><input id="p_tel" data-p="tel" inputmode="tel" placeholder="Se vazio, usa o WhatsApp"></div>
+      <div><label for="p_insta">Instagram</label><input id="p_insta" data-p="insta" placeholder="@suaempresa"></div>
     </div>
     <label for="p_ramo">Ramo (aparece no orçamento)</label><input id="p_ramo" data-p="ramo" placeholder="Manutenção de CFTV, alarmes e automação">
     <label for="p_url">Endereço público do app (para o link do cliente)</label>
@@ -266,7 +308,33 @@
   <div class="df"><button class="btn sec" onclick="dlgDecide.close()">Cancelar</button><button class="btn wa" id="decGo">Enviar resposta pelo WhatsApp</button></div>
 </dialog>
 
+<div id="printDoc"></div>
+
 <script>
+/* ============ logo (câmera de monitoramento) ============ */
+function LOGO(size = 44, dark = false){
+  const a = dark ? '#ffffff' : '#0f2233', b = dark ? '#5fd3c1' : '#0e9f8a', bg = dark ? '#0f2233' : '#ffffff';
+  return `<svg width="${size}" height="${size}" viewBox="0 0 64 64" role="img" aria-label="Logo" xmlns="http://www.w3.org/2000/svg">
+    <rect x="1.5" y="1.5" width="61" height="61" rx="14" fill="none" stroke="${a}" stroke-width="3"/>
+    <rect x="11" y="16" width="5" height="26" rx="2" fill="${a}"/>
+    <path d="M16 29 h7" stroke="${a}" stroke-width="4" stroke-linecap="round"/>
+    <g transform="rotate(14 36 26)">
+      <rect x="21" y="18" width="30" height="15" rx="4" fill="${a}"/>
+      <rect x="49" y="20" width="5" height="11" rx="1.5" fill="${a}"/>
+      <circle cx="44" cy="25.5" r="4.2" fill="${bg}"/>
+      <circle cx="44" cy="25.5" r="2" fill="${b}"/>
+    </g>
+    <circle cx="51" cy="51" r="2.6" fill="${b}"/>
+    <path d="M44.5 51 A6.5 6.5 0 0 1 51 44.5" fill="none" stroke="${b}" stroke-width="3" stroke-linecap="round"/>
+    <path d="M38.5 51 A12.5 12.5 0 0 1 51 38.5" fill="none" stroke="${b}" stroke-width="3" stroke-linecap="round"/>
+  </svg>`;
+}
+const ICON = {
+  tel: '<svg width="10" height="10" viewBox="0 0 24 24" fill="#0f2233"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1z"/></svg>',
+  mail: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#0f2233" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>',
+  insta: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#0f2233" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="#0f2233"/></svg>'
+};
+
 /* ============ utilidades ============ */
 const $ = s => document.querySelector(s);
 const LS = {
@@ -454,7 +522,7 @@ function baseURL(){
   return '';
 }
 async function buildLink(){
-  const payload = { p: { emp:prof.emp, resp:prof.resp, doc:prof.doc, wa:prof.wa, email:prof.email, ramo:prof.ramo }, q: {...q, msg: undefined, id: undefined, seq: undefined} };
+  const payload = { p: { emp:prof.emp, resp:prof.resp, doc:prof.doc, wa:prof.wa, email:prof.email, ramo:prof.ramo, tel:prof.tel, insta:prof.insta }, q: {...q, msg: undefined, id: undefined, seq: undefined} };
   return baseURL() + '#o=' + await encode(payload);
 }
 let lastLink = '';
@@ -567,8 +635,8 @@ function docHTML(p, x, clientMode){
   return `
   <div class="doc">
     <div class="doc-head">
-      <div class="emp">${esc(p.emp || 'Prestador')}</div>
-      <div class="meta">${esc(p.ramo || '')}${p.doc ? ' · ' + esc(p.doc) : ''}</div>
+      <div class="brand">${LOGO(46, true)}<div><div class="emp">${esc(p.emp || 'Prestador')}</div>
+      <div class="meta" style="margin-top:0">${esc(p.ramo || '')}${p.doc ? ' · ' + esc(p.doc) : ''}</div></div></div>
       <div class="meta">${esc(p.resp || '')}${p.wa ? ' · WhatsApp ' + esc(p.wa) : ''}${p.email ? ' · ' + esc(p.email) : ''}</div>
       <div class="tag">Orçamento nº ${esc(x.n)} · ${esc(x.data)}${x.val ? ' · válido até ' + addDays(x.data, x.val) : ''}</div>
     </div>
@@ -630,11 +698,63 @@ function showDoc(p, x, clientMode){
   viewData = { p, q: x };
   $('#viewMain').innerHTML = docHTML(p, x, clientMode) + `<div class="foot no-print">Orçamento gerado digitalmente · ${esc(p.emp || '')}</div>`;
   document.title = `Orçamento ${x.n} — ${p.emp || ''}`;
+  renderPrint();
   $('#editor').classList.add('hidden'); $('#viewer').classList.remove('hidden');
   window.scrollTo(0,0);
 }
+function printHTML(p, x){
+  const t = calc(x), c = x.cli || {};
+  const mats = (x.mat||[]).filter(m => (m.d||'').trim());
+  const servs = (x.serv||[]).filter(s => (s.d||'').trim());
+  const kv = (k,v) => v ? `<div><span>${k}:</span> ${esc(v)}</div>` : '';
+  const insta = p.insta ? '@' + p.insta.replace(/^@/, '').replace(/^https?:\/\/(www\.)?instagram\.com\//, '').replace(/\/$/, '') : '';
+  const contatos = [
+    (p.tel || p.wa) && `<span>${ICON.tel}${esc(p.tel || p.wa)}</span>`,
+    p.email && `<span>${ICON.mail}${esc(p.email)}</span>`,
+    insta && `<span>${ICON.insta}${esc(insta)}</span>`
+  ].filter(Boolean).join('');
+  return `
+  <table class="pd-wrap"><tbody><tr><td>
+    <div class="pd-head">
+      <div class="pd-brand">${LOGO(52)}<div><div class="nm">${esc(p.emp || 'Sua empresa')}</div><div class="rm">${esc(p.ramo || '')}</div></div></div>
+      <div class="pd-title"><div class="t">ORÇAMENTO</div>
+        <div class="m">Nº <b>${esc(x.n)}</b> · Emissão <b>${esc(x.data)}</b>${x.val ? ` · Válido até <b>${addDays(x.data, x.val)}</b>` : ''}</div></div>
+    </div>
+    <div class="pd-sec"><h5>Cliente</h5>
+      <div style="font-weight:600;font-size:11pt;margin-bottom:3px">${esc(c.nome || '')}</div>
+      <div class="pd-kv">${kv('CPF/CNPJ', c.doc)}${kv('Contato', c.contato)}${kv('Telefone', c.wa)}${kv('E-mail', c.email)}</div>
+      ${c.end ? `<div style="margin-top:3px"><span style="color:#5d6b79">Local do serviço:</span> ${esc(c.end)}</div>` : ''}
+    </div>
+    ${servs.length ? `<div class="pd-sec"><h5>Escopo dos serviços</h5><ol>${servs.map(s => `<li>${esc(s.d.trim())}</li>`).join('')}</ol></div>` : ''}
+    ${mats.length ? `<div class="pd-sec"><h5>Materiais</h5>
+      <table class="pd-tbl"><thead><tr><th style="width:38px">Item</th><th>Descrição</th><th class="n">Qtd.</th><th class="n">Valor unit.</th><th class="n">Total</th></tr></thead>
+      <tbody>${mats.map((m,i) => `<tr><td>${String(i+1).padStart(2,'0')}</td><td>${esc(m.d)}</td><td class="n">${num(m.q).toLocaleString('pt-BR')} ${esc(m.u||'')}</td><td class="n">${brl(num(m.v))}</td><td class="n">${brl(num(m.q)*num(m.v))}</td></tr>`).join('')}</tbody></table></div>` : ''}
+    <table class="pd-tot">
+      <tr><td>Materiais</td><td>${brl(t.mat)}</td></tr>
+      <tr><td>Mão de obra</td><td>${brl(t.mo)}</td></tr>
+      ${t.desc ? `<tr><td>Desconto</td><td>− ${brl(t.desc)}</td></tr>` : ''}
+      <tr class="g"><td>VALOR TOTAL</td><td>${brl(t.total)}</td></tr>
+    </table>
+    <div class="pd-sec"><h5>Condições comerciais</h5>
+      <div class="pd-kv" style="grid-template-columns:1fr">${kv('Forma de pagamento', x.pag)}${kv('Prazo de execução', x.prazo)}${kv('Garantia', x.gar)}${kv('Validade da proposta', x.val ? x.val + ' dias' : '')}${kv('Observações', x.obs)}</div>
+    </div>
+    <p class="pd-close">Permanecemos à disposição para quaisquer esclarecimentos que se fizerem necessários.<br>Atenciosamente, <b>${esc(p.resp || '')}</b>${p.emp ? ' — ' + esc(p.emp) : ''}</p>
+    <div class="pd-sign"><div>${esc(c.nome || 'Contratante')}<br>Contratante — de acordo</div><div>${esc(p.emp || 'Contratada')}${p.doc ? '<br>' + esc(p.doc) : '<br>Contratada'}</div></div>
+  </td></tr></tbody>
+  <tfoot><tr><td><div style="height:16mm"></div></td></tr></tfoot></table>
+  <div class="pd-foot"><div class="c">${contatos || '<span>Telefone · E-mail · Instagram</span>'}</div><div class="s">${esc(p.emp || '')}${p.doc ? ' · ' + esc(p.doc) : ''}</div></div>`;
+}
+function renderPrint(){ const d = viewData || { p: prof, q }; if (d.q) $('#printDoc').innerHTML = printHTML(d.p || {}, d.q); }
+function printPDF(){
+  renderPrint();
+  const old = document.title, d = viewData || { p: prof, q };
+  document.title = `Orcamento ${d.q.n} - ${(d.q.cli?.nome || '').slice(0,40)}`;
+  window.print();
+  setTimeout(() => document.title = old, 1000);
+}
+window.addEventListener('beforeprint', renderPrint);
 function preview(){ showDoc(prof, q, true); $('#backEdit').classList.remove('hidden'); }
-function closePreview(){ $('#viewer').classList.add('hidden'); $('#editor').classList.remove('hidden'); document.title = 'Gerador de Orçamento'; }
+function closePreview(){ viewData = null; $('#viewer').classList.add('hidden'); $('#editor').classList.remove('hidden'); document.title = 'Gerador de Orçamento'; }
 
 /* ============ inicialização ============ */
 function startEditor(){
@@ -642,6 +762,8 @@ function startEditor(){
   bindFields(); renderServ(); renderMat(); go(0);
 }
 (async function init(){
+  $('#topLogo').innerHTML = LOGO(30, true);
+  const fav = document.createElement('link'); fav.rel = 'icon'; fav.href = 'data:image/svg+xml,' + encodeURIComponent(LOGO(64)); document.head.appendChild(fav);
   $('#servChips').innerHTML = SERV_SUG.map((s,i) => `<button onclick="addServ(SERV_SUG[${i}])">+ ${esc(s.length > 42 ? s.slice(0,40) + '…' : s)}</button>`).join('');
   $('#pagChips').innerHTML = PAG_SUG.map((s,i) => `<button onclick="q.pag=PAG_SUG[${i}];$('#q_pag').value=q.pag;persist();renderSteps()">${esc(s)}</button>`).join('');
   const h = location.hash;
