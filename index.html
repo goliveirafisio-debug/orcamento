@@ -410,7 +410,8 @@ const PAG_SUG = [
   'Cartão de crédito em até 3x sem juros.',
   'Boleto com vencimento em 7 dias após a conclusão.'
 ];
-let prof = LS.get('orc.prof', {});
+const PROF_PADRAO = { emp: 'IDL Monitoramento e Automação', wa: '(81) 98622-0444', slogan: 'Tecnologia ao seu serviço' };
+let prof = { ...PROF_PADRAO, ...LS.get('orc.prof', {}) };
 let q, cur = 0;
 
 function blankQuote(){
@@ -777,7 +778,7 @@ function startEditor(){
   }
   q = LS.get('orc.draft', null) || blankQuote();
   startEditor();
-  if (!prof.emp) setTimeout(openProfile, 300);
+  if (!prof.resp) setTimeout(openProfile, 300);
 })();
 </script>
 </body>
