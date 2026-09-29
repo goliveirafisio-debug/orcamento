@@ -105,7 +105,10 @@
   .pd-wrap>tbody>tr>td,.pd-wrap>tfoot>tr>td{padding:0}
   .pd-head{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:10px;border-bottom:2px solid #0f2233}
   .pd-brand{display:flex;align-items:center;gap:10px}
-  .pd-brand .nm{font-size:14pt;font-weight:700;letter-spacing:.6px;color:#0f2233;text-transform:uppercase;line-height:1.1}
+  .pd-head{gap:16px}
+  .pd-title{flex:0 0 auto}
+  .pd-title .m{white-space:nowrap}
+  .pd-brand .nm{font-size:12.5pt;font-weight:700;letter-spacing:.6px;color:#0f2233;text-transform:uppercase;line-height:1.1}
   .pd-slogan{font-size:8.5pt;font-style:italic;color:#0e7f6f;letter-spacing:.4px;margin-top:5px}
   .doc-head .slogan{font-size:13px;font-style:italic;color:#5fd3c1;margin-top:6px;letter-spacing:.3px}
   .pd-brand .rm{font-size:8pt;color:#5d6b79;letter-spacing:.3px;margin-top:2px}
@@ -725,7 +728,7 @@ function printHTML(p, x){
       <div><div class="pd-brand">${LOGO(52)}<div><div class="nm">${esc(p.emp || 'Sua empresa')}</div><div class="rm">${esc(p.ramo || '')}</div></div></div>
         <div class="pd-slogan">${esc(slogan(p))}</div></div>
       <div class="pd-title"><div class="t">ORÇAMENTO</div>
-        <div class="m">Nº <b>${esc(x.n)}</b> · Emissão <b>${esc(x.data)}</b>${x.val ? ` · Válido até <b>${addDays(x.data, x.val)}</b>` : ''}</div></div>
+        <div class="m">Nº <b>${esc(x.n)}</b></div><div class="m">Emissão <b>${esc(x.data)}</b>${x.val ? ` · Válido até <b>${addDays(x.data, x.val)}</b>` : ''}</div></div>
     </div>
     <div class="pd-sec"><h5>Cliente</h5>
       <div style="font-weight:600;font-size:11pt;margin-bottom:3px">${esc(c.nome || '')}</div>
