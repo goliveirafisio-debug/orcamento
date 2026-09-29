@@ -130,6 +130,7 @@
   .pd-wrap>tbody>tr>td,.pd-wrap>tfoot>tr>td{padding:0}
   .pd-head{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:10px;border-bottom:2px solid #0f2233}
   .pd-brand{display:flex;align-items:center;gap:10px}
+  .pd-brand svg{flex:0 0 auto}
   .pd-head{gap:16px}
   .pd-title{flex:0 0 auto}
   .pd-title .m{white-space:nowrap}
@@ -552,7 +553,7 @@ const PAG_SUG = [
   'Cartão de crédito em até 3x sem juros.',
   'Boleto com vencimento em 7 dias após a conclusão.'
 ];
-const PROF_PADRAO = { emp: 'IDL Monitoramento e Automação', resp: 'Isaias', cargo: 'Responsável técnico', wa: '(81) 98622-0444', slogan: 'Tecnologia ao seu serviço' };
+const PROF_PADRAO = { emp: 'IDL Manutenção de Equipamento de Monitoramento e Automação', resp: 'Isaias', cargo: 'Responsável técnico', wa: '(81) 98622-0444', slogan: 'Tecnologia ao seu serviço' };
 let prof = { ...PROF_PADRAO, ...LS.get('orc.prof', {}) };
 let q, cur = 0;
 
