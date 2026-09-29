@@ -157,6 +157,7 @@
   .pd-tot td:last-child{text-align:right;white-space:nowrap}
   .pd-tot tr.g td{background:#0f2233;color:#fff;font-weight:700;font-size:11pt;padding:7px 8px}
   .pd-close{margin-top:14px;color:#3a4755;break-inside:avoid}
+  .pd-priv{margin-top:22px;padding-top:7px;border-top:1px solid #e3e8ed;font-size:7.5pt;line-height:1.4;color:#7a8794;break-inside:avoid}
   .pd-sign{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:38px;break-inside:avoid}
   .pd-sign div{border-top:1px solid #1f2a36;padding-top:4px;text-align:center;font-size:8.5pt;color:#3a4755}
   .pd-foot{position:fixed;left:0;right:0;bottom:0;height:13mm;border-top:1px solid #0f2233;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:2px;font-size:8.5pt;color:#3a4755;background:#fff}
@@ -424,6 +425,16 @@ function LOGO(size = 44, dark = false){
   </svg>`;
 }
 const slogan = p => (p.slogan ?? '').trim() || 'Tecnologia ao seu serviço';
+// Aviso de privacidade (LGPD) — orçamento e relatório
+function avisoPriv(p, tipo){
+  const contato = [p.wa && 'WhatsApp ' + p.wa, p.email].filter(Boolean).join(' ou ');
+  const uso = tipo === 'rel'
+    ? 'Os dados e as fotos deste relatório são utilizados exclusivamente para o registro e a comprovação do serviço executado'
+    : 'Os dados pessoais informados neste orçamento são utilizados exclusivamente para a sua elaboração e para a execução do serviço contratado';
+  return `<b>Aviso de privacidade:</b> ${uso}, em conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018). `
+    + `Não são compartilhados com terceiros nem utilizados para outras finalidades. `
+    + `Para solicitar acesso, correção ou exclusão dos seus dados${contato ? ', entre em contato pelo ' + esc(contato) : ', entre em contato conosco'}.`;
+}
 const ICON = {
   tel: '<svg width="10" height="10" viewBox="0 0 24 24" fill="#0f2233"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1z"/></svg>',
   mail: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#0f2233" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>',
@@ -795,6 +806,7 @@ function docHTML(p, x, clientMode){
     <section><h4>Condições</h4>
       ${line('Pagamento', x.pag)}${line('Prazo de execução', x.prazo)}${line('Garantia', x.gar)}${line('Validade', x.val ? x.val + ' dias' : '')}${line('Observações', x.obs)}
       <p style="margin:12px 0 0;color:var(--muted);font-size:14px">Permanecemos à disposição para qualquer esclarecimento que se fizer necessário.</p>
+      <p style="margin:12px 0 0;color:var(--muted);font-size:12px;line-height:1.45;border-top:1px solid var(--line);padding-top:10px">${avisoPriv(p, 'orc')}</p>
     </section>
     ${clientMode ? `<div class="decide">
       <h4 style="margin:0;font-size:12px;letter-spacing:.8px;text-transform:uppercase;color:var(--accent)">Autorização</h4>
@@ -876,6 +888,7 @@ function printHTML(p, x){
     </div>
     <p class="pd-close">Permanecemos à disposição para quaisquer esclarecimentos que se fizerem necessários.<br>Atenciosamente, <b>${esc(p.resp || '')}</b>${p.cargo ? ', ' + esc(p.cargo) : ''}${p.emp ? ' — ' + esc(p.emp) : ''}</p>
     <div class="pd-sign"><div>${esc(c.nome || 'Contratante')}<br>Contratante — de acordo</div><div>${esc(p.resp || p.emp || 'Contratada')}${p.cargo ? ' — ' + esc(p.cargo) : ''}<br>${esc(p.emp || 'Contratada')}${p.doc ? ' · ' + esc(p.doc) : ''}</div></div>
+    <p class="pd-priv">${avisoPriv(p, 'orc')}</p>
   </td></tr></tbody>
   <tfoot><tr><td><div style="height:16mm"></div></td></tr></tfoot></table>
   <div class="pd-foot"><div class="c">${contatos || '<span>Telefone · E-mail · Instagram</span>'}</div><div class="s">${esc(p.emp || '')}${p.doc ? ' · ' + esc(p.doc) : ''}</div></div>`;
@@ -996,6 +1009,7 @@ function printRelHTML(p, x, imgs){
       <div class="pd-fotos">${fotos.map((f, i) => `<figure><img src="${f.src}" alt=""><figcaption><b>Foto ${i+1}</b>${f.leg ? ' — ' + esc(f.leg) : ''}</figcaption></figure>`).join('')}</div></div>` : ''}
     <p class="pd-close">Serviço concluído e testado. Permanecemos à disposição para quaisquer esclarecimentos que se fizerem necessários.</p>
     <div class="pd-sign"><div>${esc(c.nome || 'Cliente')}<br>Recebido por</div><div>${esc(r.tec || p.resp || '')}${p.cargo ? ' — ' + esc(p.cargo) : ''}<br>${esc(p.emp || '')}</div></div>
+    <p class="pd-priv">${avisoPriv(p, 'rel')}</p>
   </td></tr></tbody>
   <tfoot><tr><td><div style="height:16mm"></div></td></tr></tfoot></table>
   <div class="pd-foot"><div class="c">${contatos || '<span>Telefone · E-mail · Instagram</span>'}</div><div class="s">${esc(p.emp || '')}${p.doc ? ' · ' + esc(p.doc) : ''}</div></div>`;
