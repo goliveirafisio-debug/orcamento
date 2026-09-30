@@ -19,7 +19,9 @@
   html,body{margin:0}
   body{background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
   header.top{background:var(--brand);color:#fff;padding:14px 16px;position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px}
-  header.top h1{font-size:17px;margin:0;flex:1;font-weight:650;letter-spacing:.2px}
+  header.top h1{font-size:17px;margin:0;flex:1;font-weight:650;letter-spacing:.2px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .chips label.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 10px;font-size:13px;cursor:pointer;color:var(--ink);margin:0;font-weight:400}
+  .chips label.chip:hover{border-color:var(--accent)}
   header.top button{background:rgba(255,255,255,.12);color:#fff;border:0;border-radius:10px;padding:8px 10px;font-size:14px;cursor:pointer}
   main{max-width:760px;margin:0 auto;padding:14px 16px 110px}
   .steps{display:flex;gap:6px;overflow-x:auto;padding:12px 16px 4px;max-width:760px;margin:0 auto;scrollbar-width:none}
@@ -207,8 +209,9 @@
 <div id="editor" class="hidden">
   <header class="top">
     <span class="logo" id="topLogo"></span><h1 id="topTitle">Novo orçamento</h1>
-    <button onclick="openCat()" title="Meu catálogo">📚</button>
-    <button onclick="openSaved()" title="Orçamentos salvos">📂 Salvos</button>
+    <button onclick="openCli()" title="Meus clientes" aria-label="Meus clientes">👥</button>
+    <button onclick="openCat()" title="Meu catálogo" aria-label="Meu catálogo">📚</button>
+    <button onclick="openSaved()" title="Orçamentos salvos" aria-label="Orçamentos salvos">📂</button>
     <button onclick="openProfile()" title="Meus dados">⚙️</button>
   </header>
 
@@ -220,6 +223,7 @@
       <div class="card">
         <h2>Dados do cliente (tomador do serviço)</h2>
         <p class="hint">Quem vai receber o orçamento. O WhatsApp é usado no envio.</p>
+        <button class="btn sec block" onclick="openCli()">👥 Escolher da minha base de clientes</button>
         <label for="c_nome">Nome / Razão social *</label>
         <input id="c_nome" data-f="cli.nome" autocomplete="off" placeholder="Ex.: Condomínio Solar das Palmeiras">
         <div class="row">
@@ -232,6 +236,7 @@
         </div>
         <label for="c_end">Endereço do serviço</label>
         <input id="c_end" data-f="cli.end" placeholder="Rua, número, bairro, cidade">
+        <button class="btn ghost" style="margin-top:8px" onclick="salvarCliAtual()">💾 Salvar este cliente na minha base</button>
       </div>
     </div>
 
@@ -398,6 +403,41 @@
   <div class="df" style="justify-content:space-between"><span style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sec" onclick="trocarSenha()">🔒 Trocar senha</button><button class="btn sec" onclick="novoCodigoRecuperacao()">🔑 Novo código</button></span><button class="btn" onclick="saveProfile()">Salvar</button></div>
 </dialog>
 
+<!-- Clientes -->
+<dialog id="dlgCli">
+  <div class="dh"><h3>👥 Meus clientes</h3><button class="btn ghost" onclick="dlgCli.close()">✕</button></div>
+  <div class="db">
+    <div id="cliLista">
+      <input id="cliBusca" type="search" placeholder="Buscar por nome, telefone, CPF/CNPJ…" oninput="renderCliLista()" style="margin-top:6px">
+      <div class="chips" style="margin:10px 0 4px">
+        <button onclick="editCli()">＋ Novo cliente</button>
+        <button id="btnContatos" onclick="importarContatos()">📇 Dos contatos do celular</button>
+        <label class="chip">📄 Importar planilha<input type="file" accept=".csv,.xlsx,.xls,text/csv" hidden onchange="importarPlanilha(this.files[0]);this.value=''"></label>
+      </div>
+      <div id="cliConta" style="font-size:12px;color:var(--muted);margin:6px 0"></div>
+      <div id="cliItens"></div>
+    </div>
+    <div id="cliForm" class="hidden">
+      <h4 id="cliFormTitulo" style="margin:8px 0 0">Novo cliente</h4>
+      <label for="cf_nome">Nome / Razão social *</label><input id="cf_nome" autocomplete="off">
+      <div class="row">
+        <div><label for="cf_doc">CPF / CNPJ</label><input id="cf_doc" inputmode="numeric"></div>
+        <div><label for="cf_contato">Contato / responsável</label><input id="cf_contato"></div>
+      </div>
+      <div class="row">
+        <div><label for="cf_wa">WhatsApp</label><input id="cf_wa" inputmode="tel" placeholder="(81) 99999-9999"></div>
+        <div><label for="cf_email">E-mail</label><input id="cf_email" inputmode="email"></div>
+      </div>
+      <label for="cf_end">Endereço</label><input id="cf_end" placeholder="Rua, número, bairro, cidade">
+      <label for="cf_obs">Observações (só para você)</label><textarea id="cf_obs" rows="2" placeholder="Ex.: 8 câmeras, DVR Intelbras 16 canais, portão com motor PPA"></textarea>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px">
+        <button class="btn sec" onclick="mostrarListaCli()">Cancelar</button>
+        <button class="btn" onclick="salvarCliForm()">Salvar cliente</button>
+      </div>
+    </div>
+  </div>
+</dialog>
+
 <!-- Catálogo -->
 <dialog id="dlgCat">
   <div class="dh"><h3>📚 Meu catálogo</h3><button class="btn ghost" onclick="dlgCat.close()">✕</button></div>
@@ -467,7 +507,7 @@ const ICON = {
 const $ = s => document.querySelector(s);
 // Armazenamento: chaves comuns vão direto ao localStorage; as protegidas ficam em memória
 // depois do desbloqueio e são gravadas no disco sempre criptografadas (AES-GCM).
-const PROTEGIDAS = ['orc.prof', 'orc.draft', 'orc.quotes', 'orc.cat'];
+const PROTEGIDAS = ['orc.prof', 'orc.draft', 'orc.quotes', 'orc.cat', 'orc.cli'];
 const MEM = new Map(), PENDENTES = new Set();
 let DADOS_KEY = null, timerGravar = null;
 const LS_raw = {
@@ -619,7 +659,7 @@ function bindFields(){
     el.oninput = () => { setF(el.dataset.f, el.value); if (el.dataset.f === 'val' || el.hasAttribute('data-money')) renderTotals(); persist(); renderSteps(); };
     if (el.hasAttribute('data-money')) el.onblur = () => { if (el.value.trim()) el.value = num(el.value).toLocaleString('pt-BR',{minimumFractionDigits:2}); };
   });
-  $('#topTitle').textContent = 'Orçamento nº ' + q.n;
+  $('#topTitle').textContent = 'Nº ' + q.n; $('#topTitle').title = 'Orçamento nº ' + q.n;
 }
 function renderServ(){
   $('#servList').innerHTML = q.serv.map((s,i) => `
@@ -741,6 +781,7 @@ function sendWA(){
   let msg = $('#q_msg').value;
   if (!/^https?:/.test(lastLink) || /localhost|127\.0\.0\.1/.test(lastLink)) msg += '\n\n' + textQuote();
   saveQuote(false, 'enviado');
+  upsertCli(q.cli);
   window.open(`https://wa.me/${to}?text=${encodeURIComponent(msg)}`, '_blank');
 }
 async function copyLink(){
@@ -758,6 +799,196 @@ function renderSummary(){
       ${t.desc?`<div><span>Desconto</span><b>− ${brl(t.desc)}</b></div>`:''}
       <div class="grand"><span>Total</span><span>${brl(t.total)}</span></div>
     </div>`;
+}
+
+/* ============ base de clientes ============ */
+const getCli = () => LS.get('orc.cli', []);
+const setCli = l => LS.set('orc.cli', l);
+const semAcento = s => String(s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+const cliKey = c => phone(c?.wa) || semAcento(c?.nome);
+const CAMPOS_CLI = ['nome', 'doc', 'contato', 'wa', 'email', 'end'];
+
+// Junta com um cliente já existente (mesmo WhatsApp, ou mesmo nome sem WhatsApp); campos vazios não apagam os antigos
+function upsertCli(c){
+  const nome = String(c.nome ?? '').trim();
+  if (!nome && !phone(c.wa)) return null;
+  const lista = getCli(), k = cliKey(c), atual = lista.find(x => cliKey(x) === k);
+  if (atual){
+    for (const f of [...CAMPOS_CLI, 'obs']) if (String(c[f] ?? '').trim()) atual[f] = String(c[f]).trim();
+    setCli(lista); return 'atualizado';
+  }
+  const novo = { id: novoId() };
+  for (const f of [...CAMPOS_CLI, 'obs']) novo[f] = String(c[f] ?? '').trim();
+  lista.push(novo); setCli(lista); return 'novo';
+}
+function salvarCliAtual(){
+  if (!q.cli.nome){ toast('Preencha pelo menos o nome do cliente'); return; }
+  toast(upsertCli(q.cli) === 'novo' ? 'Cliente salvo na sua base' : 'Cliente atualizado na sua base');
+}
+const dadosCli = c => Object.fromEntries(CAMPOS_CLI.map(f => [f, c[f] || '']));
+
+// ---- tela ----
+function openCli(){
+  $('#cliBusca').value = '';
+  $('#btnContatos').classList.toggle('hidden', !('contacts' in navigator && 'ContactsManager' in window));
+  mostrarListaCli(); dlgCli.showModal();
+}
+function mostrarListaCli(){ $('#cliForm').classList.add('hidden'); $('#cliLista').classList.remove('hidden'); renderCliLista(); }
+function renderCliLista(){
+  const busca = semAcento($('#cliBusca').value), dig = busca.replace(/\D/g, '');
+  const orcs = LS.get('orc.quotes', []);
+  const lista = getCli()
+    .filter(c => !busca || semAcento([c.nome, c.contato, c.doc, c.end, c.email].join(' ')).includes(busca) || (dig.length >= 3 && String(c.wa).replace(/\D/g, '').includes(dig)))
+    .sort((a, b) => semAcento(a.nome).localeCompare(semAcento(b.nome)));
+  const total = getCli().length;
+  $('#cliConta').textContent = total ? `${total} cliente${total > 1 ? 's' : ''} na base` : '';
+  $('#cliItens').innerHTML = lista.length ? lista.map(c => {
+    const n = orcs.filter(o => cliKey(o.cli) === cliKey(c)).length;
+    const info = [c.wa, c.end].filter(Boolean).join(' · ') + (n ? ` · ${n} orçamento${n > 1 ? 's' : ''}` : '');
+    return `<div class="list-q">
+      <div style="min-width:0"><b>${esc(c.nome || '(sem nome)')}</b><small>${esc(info) || '&nbsp;'}</small></div>
+      <div style="display:flex;gap:6px;flex:0 0 auto">
+        <button class="btn" style="padding:7px 12px" onclick="usarCli('${c.id}')">Usar</button>
+        <button class="btn sec" style="padding:7px 10px" title="Editar" onclick="editCli('${c.id}')">✎</button>
+        <button class="btn danger" style="padding:7px 10px" title="Excluir" onclick="delCli('${c.id}')">🗑</button>
+      </div></div>`;
+  }).join('') : `<p style="color:var(--muted)">${total ? 'Nenhum cliente encontrado nessa busca.' : 'Sua base está vazia. Cadastre um cliente, traga dos contatos do celular ou importe uma planilha.'}</p>`;
+}
+function usarCli(id){
+  const c = getCli().find(x => x.id === id); if (!c) return;
+  const outro = q.cli.nome && cliKey(q.cli) !== cliKey(c);
+  if (outro){
+    if (!confirm(`Começar um novo orçamento para ${c.nome}?\n\nO orçamento atual (${q.cli.nome}) fica guardado em Salvos.`)) return;
+    saveQuote(false); q = blankQuote(); q.cli = dadosCli(c); persist(); startEditor();
+  } else {
+    q.cli = dadosCli(c); persist(); bindFields(); go(0);
+  }
+  dlgCli.close(); toast('Cliente: ' + c.nome);
+}
+let cliEditId = null;
+function editCli(id){
+  cliEditId = id || null;
+  const c = id ? getCli().find(x => x.id === id) || {} : {};
+  for (const f of [...CAMPOS_CLI, 'obs']) $('#cf_' + f).value = c[f] || '';
+  $('#cliFormTitulo').textContent = id ? 'Editar cliente' : 'Novo cliente';
+  $('#cliLista').classList.add('hidden'); $('#cliForm').classList.remove('hidden');
+  $('#cf_nome').focus();
+}
+function salvarCliForm(){
+  const d = {}; for (const f of [...CAMPOS_CLI, 'obs']) d[f] = $('#cf_' + f).value.trim();
+  if (!d.nome){ toast('Informe o nome do cliente'); $('#cf_nome').focus(); return; }
+  if (cliEditId){
+    const lista = getCli(), c = lista.find(x => x.id === cliEditId);
+    if (c){ Object.assign(c, d); setCli(lista); }
+  } else upsertCli(d);
+  toast('Cliente salvo'); mostrarListaCli();
+}
+function delCli(id){
+  const c = getCli().find(x => x.id === id); if (!c) return;
+  if (!confirm(`Excluir ${c.nome} da sua base de clientes?\n\n(Os orçamentos já feitos não são apagados.)`)) return;
+  setCli(getCli().filter(x => x.id !== id)); renderCliLista();
+}
+
+// ---- importar dos contatos do celular (Chrome no Android) ----
+const fmtEnd = a => a ? [(a.addressLine || []).join(', '), a.dependentLocality, a.city, a.region].filter(Boolean).join(' - ') : '';
+async function importarContatos(){
+  try {
+    const disp = await navigator.contacts.getProperties();
+    const props = ['name', 'tel', 'email', 'address'].filter(p => disp.includes(p));
+    const escolhidos = await navigator.contacts.select(props, { multiple: true });
+    let novos = 0, atual = 0;
+    for (const k of escolhidos){
+      const r = upsertCli({ nome: (k.name || [])[0] || '', wa: (k.tel || [])[0] || '', email: (k.email || [])[0] || '', end: fmtEnd((k.address || [])[0]) });
+      if (r === 'novo') novos++; else if (r === 'atualizado') atual++;
+    }
+    renderCliLista();
+    if (escolhidos.length) toast(`${novos} novo(s), ${atual} atualizado(s)`);
+  } catch(e){ toast('Não foi possível abrir os contatos'); }
+}
+
+// ---- importar planilha (.csv ou .xlsx) ----
+function lerCSV(txt){
+  const l1 = txt.split(/\r?\n/)[0] || '';
+  const sep = [';', ',', '\t'].sort((a, b) => l1.split(b).length - l1.split(a).length)[0];
+  const linhas = []; let linha = [], campo = '', aspas = false;
+  for (let i = 0; i < txt.length; i++){
+    const ch = txt[i];
+    if (aspas){
+      if (ch === '"' && txt[i + 1] === '"'){ campo += '"'; i++; }
+      else if (ch === '"') aspas = false;
+      else campo += ch;
+    } else if (ch === '"') aspas = true;
+    else if (ch === sep){ linha.push(campo); campo = ''; }
+    else if (ch === '\n' || ch === '\r'){
+      if (ch === '\r' && txt[i + 1] === '\n') i++;
+      linha.push(campo); linhas.push(linha); linha = []; campo = '';
+    } else campo += ch;
+  }
+  if (campo || linha.length){ linha.push(campo); linhas.push(linha); }
+  return linhas;
+}
+function mapearLinhas(rows){
+  rows = rows.filter(r => r.some(c => String(c).trim()));
+  if (!rows.length) return [];
+  const ignora = h => /(type|tipo|label|rotulo)/.test(h);
+  const regras = {
+    sobrenome: { sim: ['sobrenome', 'last name', 'family name'], nao: [] },
+    nome:      { sim: ['nome', 'cliente', 'razao', 'empresa', 'condominio', 'first name', 'given name', 'name'], nao: ['sobrenome', 'last name', 'family', 'contato', 'responsavel', 'meio', 'middle', 'fantasia'] },
+    doc:       { sim: ['cpf', 'cnpj', 'documento'], nao: [] },
+    contato:   { sim: ['contato', 'responsavel', 'sindico'], nao: [] },
+    wa:        { sim: ['whatsapp', 'whats', 'celular', 'telefone', 'fone', 'phone', 'mobile', 'tel'], nao: [] },
+    email:     { sim: ['e-mail', 'email', 'mail'], nao: [] },
+    end:       { sim: ['endereco', 'logradouro', 'rua', 'address'], nao: [] },
+    obs:       { sim: ['obs', 'observ', 'nota'], nao: [] }
+  };
+  const h = rows[0].map(semAcento), col = {}, usadas = new Set();
+  for (const [campo, r] of Object.entries(regras)){
+    const i = h.findIndex((t, j) => !usadas.has(j) && !ignora(t) && r.sim.some(k => t.includes(k)) && !r.nao.some(k => t.includes(k)));
+    if (i >= 0){ col[campo] = i; usadas.add(i); }
+  }
+  let dados = rows.slice(1);
+  if (col.nome === undefined && col.wa === undefined){      // sem linha de títulos: Nome, Telefone, E-mail, Endereço
+    Object.assign(col, { nome: 0, wa: 1, email: 2, end: 3 }); dados = rows;
+  }
+  const v = (r, c) => c === undefined ? '' : String(r[c] ?? '').trim();
+  return dados.map(r => ({
+    nome: [v(r, col.nome), v(r, col.sobrenome)].filter(Boolean).join(' '),
+    doc: v(r, col.doc), contato: v(r, col.contato), wa: v(r, col.wa),
+    email: v(r, col.email), end: v(r, col.end), obs: v(r, col.obs)
+  })).filter(c => c.nome || phone(c.wa));
+}
+function carregarXLSX(){
+  if (window.XLSX) return Promise.resolve();
+  return new Promise((ok, erro) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.integrity = 'sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw';
+    s.crossOrigin = 'anonymous';
+    s.onload = ok; s.onerror = () => erro(new Error('xlsx'));
+    document.head.appendChild(s);
+  });
+}
+async function importarPlanilha(f){
+  if (!f) return;
+  let rows;
+  try {
+    if (/\.xlsx?$/i.test(f.name)){
+      try { await carregarXLSX(); } catch(e){ alert('Para ler arquivo do Excel é preciso estar com internet. Outra opção: no Excel, salve a planilha como CSV e importe o arquivo .csv.'); return; }
+      const wb = XLSX.read(await f.arrayBuffer());
+      rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: '', raw: false });
+    } else {
+      const buf = await f.arrayBuffer();
+      let txt; try { txt = new TextDecoder('utf-8', { fatal: true }).decode(buf); } catch(e){ txt = new TextDecoder('windows-1252').decode(buf); }
+      rows = lerCSV(txt.replace(/^﻿/, ''));
+    }
+  } catch(e){ toast('Não consegui ler a planilha'); return; }
+  const clis = mapearLinhas(rows);
+  if (!clis.length){ alert('Não encontrei clientes nessa planilha.\n\nDeixe na primeira linha os títulos das colunas, por exemplo: Nome, Telefone, E-mail, Endereço.'); return; }
+  const base = getCli(), repetidos = clis.filter(c => base.some(b => cliKey(b) === cliKey(c))).length;
+  const ex = clis.slice(0, 3).map(c => '• ' + (c.nome || c.wa)).join('\n');
+  if (!confirm(`Encontrei ${clis.length} cliente(s) na planilha:\n${ex}${clis.length > 3 ? '\n…' : ''}\n\n${repetidos ? repetidos + ' já estão na sua base e serão atualizados.\n\n' : ''}Importar?`)) return;
+  let novos = 0; clis.forEach(c => { if (upsertCli(c) === 'novo') novos++; });
+  renderCliLista(); toast(`${novos} cliente(s) novo(s) importado(s)`);
 }
 
 /* ============ catálogo de serviços e materiais ============ */
