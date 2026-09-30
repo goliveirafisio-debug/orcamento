@@ -1271,7 +1271,7 @@ function mostrarLock(modo){
   $('#lockSenha').nextElementSibling.classList.toggle('hidden', codigo);
   $('#lockSenha').autocomplete = codigo ? 'off' : (criar ? 'new-password' : 'current-password');
   $('#lockSenha').placeholder = codigo ? 'XXXX-XXXX-XXXX-XXXX' : '';
-  $('#lockConf').parentElement.classList.toggle('hidden', !criar);
+  $('#lockConf').closest('.pw').parentElement.classList.toggle('hidden', !criar);
   $('#lockEsqueci').classList.toggle('hidden', modo !== 'entrar');
   $('#lockApagar').classList.toggle('hidden', !codigo);
   $('#lockCancelar').classList.toggle('hidden', !['trocar', 'codigo'].includes(modo));
