@@ -110,6 +110,10 @@
   .lock-box p{color:var(--muted);font-size:14px;margin:0 0 6px}
   .lock-box label{text-align:left}
   .lock-box input{font-size:18px;letter-spacing:2px;text-align:center}
+  .pw{position:relative}
+  .pw input{padding-left:48px;padding-right:48px}
+  .olho{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:42px;height:42px;border:0;background:transparent;border-radius:10px;cursor:pointer;display:grid;place-items:center;color:var(--muted)}
+  .olho:hover,.olho:focus-visible{background:#eef2f5;color:var(--brand)}
   .lock-emp{font-size:13px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--brand);margin-top:8px}
   .lock-codigo{font:700 20px/1.3 ui-monospace,Consolas,monospace;letter-spacing:2px;background:#eef6f4;border:1px dashed var(--accent);border-radius:12px;padding:14px 8px;color:var(--brand);margin-top:12px}
   #lockCodigoSeguir:disabled{opacity:.45}
@@ -177,8 +181,8 @@
     <form id="lockForm" onsubmit="event.preventDefault();lockEnviar()">
       <h2 id="lockTitulo"></h2>
       <p id="lockTexto"></p>
-      <div><label for="lockSenha" id="lockSenhaLbl">Senha</label><input id="lockSenha" type="password" autocomplete="current-password" required></div>
-      <div><label for="lockConf">Repita a senha</label><input id="lockConf" type="password" autocomplete="new-password"></div>
+      <div><label for="lockSenha" id="lockSenhaLbl">Senha</label><div class="pw"><input id="lockSenha" type="password" autocomplete="current-password" required><button type="button" class="olho" onclick="verSenha(this)" aria-label="Mostrar senha" title="Mostrar senha"></button></div></div>
+      <div><label for="lockConf">Repita a senha</label><div class="pw"><input id="lockConf" type="password" autocomplete="new-password"><button type="button" class="olho" onclick="verSenha(this)" aria-label="Mostrar senha" title="Mostrar senha"></button></div></div>
       <div id="lockMsg" role="alert"></div>
       <button class="btn block" id="lockBtn" type="submit">Entrar</button>
       <button class="btn ghost" id="lockCancelar" type="button" onclick="aoDesbloquear=null;lockModo=DADOS_KEY?'':'entrar';DADOS_KEY?esconderLock():mostrarLock('entrar')">Cancelar</button>
@@ -1174,6 +1178,17 @@ function preview(){ showDoc(prof, q, true); $('#backEdit').classList.remove('hid
 function closePreview(){ viewData = null; $('#viewer').classList.add('hidden'); $('#editor').classList.remove('hidden'); document.title = 'IDL Orçamentos'; }
 
 /* ============ senha de acesso + criptografia dos dados ============ */
+const OLHO = {
+  aberto: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+  fechado: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.6 5.1A10.8 10.8 0 0 1 12 5c6.4 0 10 7 10 7a17.6 17.6 0 0 1-2.9 3.9M6.6 6.6C3.8 8.5 2 12 2 12s3.6 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="M3 3l18 18"/></svg>'
+};
+function verSenha(b){
+  const inp = b.previousElementSibling, mostrar = inp.type === 'password';
+  inp.type = mostrar ? 'text' : 'password';
+  b.innerHTML = mostrar ? OLHO.fechado : OLHO.aberto;
+  const t = mostrar ? 'Esconder senha' : 'Mostrar senha'; b.setAttribute('aria-label', t); b.title = t;
+  inp.focus();
+}
 // Uma chave de dados aleatória (AES-GCM 256) criptografa perfil, orçamentos e fotos.
 // Essa chave fica guardada "trancada" duas vezes: pela senha e pelo código de recuperação
 // (cada um passa por PBKDF2-SHA256). Nenhuma das duas coisas é guardada no aparelho.
@@ -1251,6 +1266,9 @@ function mostrarLock(modo){
     : codigo ? 'Digite o código de recuperação que você guardou quando criou a senha.' : 'Seus orçamentos estão protegidos.';
   $('#lockSenhaLbl').textContent = codigo ? 'Código de recuperação' : 'Senha';
   $('#lockSenha').type = codigo ? 'text' : 'password';
+  $('#lockConf').type = 'password';
+  document.querySelectorAll('#lock .olho').forEach(b => { b.innerHTML = OLHO.aberto; b.setAttribute('aria-label', 'Mostrar senha'); b.title = 'Mostrar senha'; });
+  $('#lockSenha').nextElementSibling.classList.toggle('hidden', codigo);
   $('#lockSenha').autocomplete = codigo ? 'off' : (criar ? 'new-password' : 'current-password');
   $('#lockSenha').placeholder = codigo ? 'XXXX-XXXX-XXXX-XXXX' : '';
   $('#lockConf').parentElement.classList.toggle('hidden', !criar);
