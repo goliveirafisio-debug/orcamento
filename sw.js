@@ -1,5 +1,5 @@
 // Service worker: rede primeiro (para receber atualizações), cache como reserva offline.
-const CACHE = 'idl-orcamentos-v8';
+const CACHE = 'idl-orcamentos-v9';
 const ARQUIVOS = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', e => {

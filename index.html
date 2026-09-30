@@ -187,10 +187,10 @@
     </form>
     <div id="lockCodigoBox" class="hidden">
       <h2 id="lockCodigoTitulo"></h2>
-      <p>Se esquecer a senha, é com este código que você cria uma nova <b>sem perder nada</b>. Ele aparece só agora.</p>
+      <p>Se esquecer a senha, é com este código que você cria uma nova <b>sem perder nada</b>. Ele aparece só agora. No WhatsApp, escolha a <b>conversa com você mesmo</b>.</p>
       <div class="lock-codigo" id="lockCodigo"></div>
       <div style="display:grid;gap:8px;margin-top:12px">
-        <button class="btn wa block" type="button" onclick="codigoWhats()">📲 Enviar para o meu WhatsApp</button>
+        <button class="btn wa block" type="button" onclick="codigoWhats()">📲 Guardar no meu WhatsApp</button>
         <button class="btn sec block" type="button" onclick="codigoCopiar()">📋 Copiar código</button>
       </div>
       <label class="chk" style="margin-top:14px;justify-content:center"><input type="checkbox" id="lockCodigoOk" onchange="$('#lockCodigoSeguir').disabled=!this.checked"> Guardei o código em lugar seguro</label>
@@ -673,14 +673,14 @@ function renderTotals(){
 function defaultMsg(link){
   const t = calc(), c = q.cli;
   const saud = (c.contato || c.nome || '').split(' ')[0] || '';
-  const val = q.val ? `\n🗓 Validade: ${q.val} dias (até ${addDays(q.data, q.val)})` : '';
+  const val = q.val ? `\n*Validade:* ${q.val} dias (até ${addDays(q.data, q.val)})` : '';
   return `Olá${saud ? ', ' + saud : ''}! Tudo bem?
 
 Conforme conversamos, segue o orçamento nº ${q.n} referente aos serviços de manutenção do seu sistema${c.end ? ' no endereço ' + c.end : ''}.
 
-💰 Valor total: ${brl(t.total)}${val}
+*Valor total: ${brl(t.total)}*${val}
 
-📄 No link abaixo você confere todos os detalhes (serviços, materiais e condições de pagamento) e pode autorizar a execução com um toque:
+No link abaixo você confere todos os detalhes (serviços, materiais e condições de pagamento) e pode autorizar a execução com um toque:
 ${link || '[o link do orçamento entra aqui]'}
 
 Fico à disposição para qualquer esclarecimento que se fizer necessário.
@@ -728,7 +728,7 @@ function textQuote(){
   if (q.prazo) L.push(`*Prazo:* ${q.prazo}`);
   if (q.gar) L.push(`*Garantia:* ${q.gar}`);
   if (q.obs) L.push(`*Obs.:* ${q.obs}`);
-  L.push('', '👉 Para autorizar a execução, responda *CONCORDO*. Se não estiver de acordo, responda *DISCORDO*.');
+  L.push('', '➡ Para autorizar a execução, responda *CONCORDO*. Se não estiver de acordo, responda *DISCORDO*.');
   return L.join('\n');
 }
 function sendWA(){
@@ -1273,9 +1273,10 @@ function mostrarCodigo(codigo, titulo){
   $('#lockCodigoOk').checked = false; $('#lockCodigoSeguir').disabled = true;
 }
 function codigoWhats(){
-  const c = $('#lockCodigo').textContent, to = phone(prof.wa);
-  const msg = `🔐 Código de recuperação do app IDL Orçamentos:\n\n${c}\n\nGuarde esta mensagem. Ela permite criar uma senha nova sem perder os orçamentos.`;
-  window.open(`https://wa.me/${to}?text=${encodeURIComponent(msg)}`, '_blank');
+  const c = $('#lockCodigo').textContent;
+  const msg = `*Código de recuperação do app IDL Orçamentos:*\n\n${c}\n\nGuarde esta mensagem. Ela permite criar uma senha nova sem perder os orçamentos.`;
+  // sem número: o WhatsApp pede para escolher a conversa (a pessoa escolhe a conversa com ela mesma)
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
 }
 async function codigoCopiar(){ try { await navigator.clipboard.writeText($('#lockCodigo').textContent); toast('Código copiado'); } catch(e){ toast('Anote o código à mão'); } }
 
