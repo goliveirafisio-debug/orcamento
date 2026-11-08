@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0f2233">
-<title>IDL Orçamentos</title>
+<title>Orçamentos</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="IDL Orçamentos">
+<meta name="apple-mobile-web-app-title" content="Orçamentos">
 <style>
   :root{
     --bg:#f3f5f8; --card:#fff; --ink:#15202b; --muted:#5b6b7a; --line:#dde3ea;
@@ -394,7 +394,7 @@
       <div><label for="p_tel">Telefone (rodapé do PDF)</label><input id="p_tel" data-p="tel" inputmode="tel" placeholder="Se vazio, usa o WhatsApp"></div>
       <div><label for="p_insta">Instagram</label><input id="p_insta" data-p="insta" placeholder="@suaempresa"></div>
     </div>
-    <label for="p_slogan">Frase abaixo da logo</label><input id="p_slogan" data-p="slogan" placeholder="Tecnologia ao seu serviço">
+    <label for="p_slogan">Frase abaixo da logo</label><input id="p_slogan" data-p="slogan" placeholder="Opcional">
     <label for="p_ramo">Ramo (aparece no orçamento)</label><input id="p_ramo" data-p="ramo" placeholder="Manutenção de CFTV, alarmes e automação">
     <label for="p_url">Endereço público do app (para o link do cliente)</label>
     <input id="p_url" data-p="url" inputmode="url" placeholder="https://seuusuario.github.io/orcamento/">
@@ -471,22 +471,17 @@
 <div id="printDoc"></div>
 
 <script>
-/* ============ logo IDL (D em forma de lente + sinal) ============ */
+/* ============ logo genérica (documento com visto) ============ */
 function LOGO(size = 44, dark = false){
   const a = dark ? '#ffffff' : '#0f2233', b = dark ? '#5fd3c1' : '#0e9f8a', bg = dark ? '#0f2233' : '#ffffff';
-  return `<svg width="${size}" height="${size}" viewBox="0 0 64 64" role="img" aria-label="Logo IDL" xmlns="http://www.w3.org/2000/svg">
+  return `<svg width="${size}" height="${size}" viewBox="0 0 64 64" role="img" aria-label="Logo" xmlns="http://www.w3.org/2000/svg">
     <rect x="1.5" y="1.5" width="61" height="61" rx="14" fill="${bg}" stroke="${a}" stroke-width="3"/>
-    <g transform="translate(32 32) scale(.84) translate(-33.5 -31)">
-      <rect x="8.5" y="18" width="6" height="28" rx="1" fill="${a}"/>
-      <path fill-rule="evenodd" fill="${a}" d="M18.5 18h9a13 14 0 0 1 0 28h-9z M24.5 24h3a7 8 0 0 1 0 16h-3z"/>
-      <circle cx="28" cy="32" r="3.3" fill="${b}"/>
-      <path fill="${a}" d="M44 18h6v22h9v6h-15z"/>
-      <path d="M51.5 20a3.5 3.5 0 0 1 3.5 3.5" fill="none" stroke="${b}" stroke-width="2.6" stroke-linecap="round"/>
-      <path d="M51.5 15.5a7.5 7.5 0 0 1 7.5 7.5" fill="none" stroke="${b}" stroke-width="2.6" stroke-linecap="round"/>
-    </g>
+    <path fill="${a}" d="M20 11h17l11 11v29a2 2 0 0 1-2 2H20a2 2 0 0 1-2-2V13a2 2 0 0 1 2-2z"/>
+    <path d="M37 11v11h11" fill="none" stroke="${bg}" stroke-width="2.6" stroke-linejoin="round"/>
+    <path d="M25 37l6 6 10-12" fill="none" stroke="${b}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>`;
 }
-const slogan = p => (p.slogan ?? '').trim() || 'Tecnologia ao seu serviço';
+const slogan = p => (p.slogan ?? '').trim();
 // Aviso de privacidade (LGPD) — orçamento e relatório
 function avisoPriv(p, tipo){
   const contato = [p.wa && 'WhatsApp ' + p.wa, p.email].filter(Boolean).join(' ou ');
@@ -596,25 +591,13 @@ async function decode(str){
 
 /* ============ estado ============ */
 const STEPS = ['1 Cliente', '2 Serviços', '3 Materiais', '4 Pagamento', '5 Enviar', '6 Relatório'];
-const SERV_SUG = [
-  'Manutenção preventiva do sistema de CFTV (limpeza de câmeras, ajuste de foco e ângulo)',
-  'Substituição de câmera com defeito',
-  'Verificação e configuração do DVR/NVR e HD de gravação',
-  'Configuração de acesso remoto pelo celular',
-  'Revisão de cabeamento, conectores e fontes de alimentação',
-  'Manutenção da central de alarme e sensores',
-  'Manutenção de motor de portão automático',
-  'Manutenção de controle de acesso / interfone',
-  'Configuração de automação residencial (iluminação, tomadas, cenas)',
-  'Teste geral de funcionamento e orientação ao cliente'
-];
 const PAG_SUG = [
   'À vista via PIX na conclusão do serviço.',
   '50% na aprovação e 50% na conclusão, via PIX.',
   'Cartão de crédito em até 3x sem juros.',
   'Boleto com vencimento em 7 dias após a conclusão.'
 ];
-const PROF_PADRAO = { emp: 'IDL Manutenção de Equipamentos de Monitoramento e Automação', resp: 'Isaias', cargo: 'Responsável técnico', wa: '(81) 98622-0444', slogan: 'Tecnologia ao seu serviço' };
+const PROF_PADRAO = {};
 let prof = { ...PROF_PADRAO, ...LS.get('orc.prof', {}) };
 let q, cur = 0;
 
@@ -720,7 +703,7 @@ function defaultMsg(link){
   const val = q.val ? `\n*Validade:* ${q.val} dias (até ${addDays(q.data, q.val)})` : '';
   return `Olá${saud ? ', ' + saud : ''}! Tudo bem?
 
-Conforme conversamos, segue o orçamento nº ${q.n} referente aos serviços de manutenção do seu sistema${c.end ? ' no endereço ' + c.end : ''}.
+Conforme conversamos, segue o orçamento nº ${q.n} referente aos serviços solicitados${c.end ? ' no endereço ' + c.end : ''}.
 
 *Valor total: ${brl(t.total)}*${val}
 
@@ -996,7 +979,7 @@ const novoId = () => Date.now().toString(36) + Math.random().toString(36).slice(
 function getCat(){
   const c = LS.get('orc.cat', null);
   if (c) return c;
-  return { serv: SERV_SUG.map(d => ({ id: novoId(), d, v: '' })), mat: [] };
+  return { serv: [], mat: [] };
 }
 const setCat = c => LS.set('orc.cat', c);
 const curto = (s, n = 38) => s.length > n ? s.slice(0, n - 2) + '…' : s;
@@ -1152,7 +1135,18 @@ function docHTML(p, x, clientMode){
       <p style="margin:12px 0 0;color:var(--muted);font-size:14px">Permanecemos à disposição para qualquer esclarecimento que se fizer necessário.</p>
       <p style="margin:12px 0 0;color:var(--muted);font-size:12px;line-height:1.45;border-top:1px solid var(--line);padding-top:10px">${avisoPriv(p, 'orc')}</p>
     </section>
-    ${clientMode ? `<div class="decide">
+    ${clientMode ? `<section><h4>Seus arquivos</h4>
+      <p style="margin:0 0 10px;color:var(--muted);font-size:14px">Tem fotos do local ou documentos para mandar? Anexe aqui. Eles ficam guardados só neste aparelho e seguem para ${esc(p.resp || 'o prestador')} quando você tocar em enviar.</p>
+      <div id="anexoLista"></div>
+      <div id="anexoAviso"></div>
+      <div style="display:grid;gap:8px;margin-top:8px">
+        <label class="btn sec block" style="margin:0;color:var(--ink)">📎 Anexar fotos ou PDF
+          <input type="file" accept="image/*,application/pdf" multiple hidden onchange="addAnexos(this.files);this.value=''">
+        </label>
+        <button class="btn wa block hidden" id="anexoEnviar" onclick="enviarAnexos()">📤 Enviar arquivos para ${esc(p.resp || 'o prestador')}</button>
+      </div>
+    </section>
+    <div class="decide">
       <h4 style="margin:0;font-size:12px;letter-spacing:.8px;text-transform:uppercase;color:var(--accent)">Autorização</h4>
       <p style="margin:6px 0 0">Está de acordo com este orçamento? Sua resposta vai direto para o WhatsApp de ${esc(p.resp || 'prestador')}.</p>
       <div class="btns">
@@ -1192,6 +1186,82 @@ function showDoc(p, x, clientMode){
   renderPrint();
   $('#editor').classList.add('hidden'); $('#viewer').classList.remove('hidden');
   window.scrollTo(0,0);
+  if (clientMode) carregarAnexos();
+}
+
+/* ============ anexos do cliente: ficam só no aparelho dele e seguem pelo compartilhamento do celular ============ */
+const ANEXO_MAX = 10, ANEXO_MAX_BYTES = 50 * 1024 * 1024;   // limites do compartilhamento de arquivos no celular
+let anexoDbP = null, anexosLista = [], previewMode = false;
+function anexoDB(){
+  return anexoDbP ??= new Promise((ok, erro) => {
+    const r = indexedDB.open('orc-anexos', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('anexos', { keyPath: 'id' });
+    r.onsuccess = () => ok(r.result); r.onerror = () => erro(r.error);
+  });
+}
+async function anexoTx(modo, fn){
+  const db = await anexoDB();
+  return new Promise((ok, erro) => { const t = db.transaction('anexos', modo); const req = fn(t.objectStore('anexos')); t.oncomplete = () => ok(req?.result); t.onerror = () => erro(t.error); });
+}
+const anexoChave = () => phone(viewData.p.wa) + ':' + viewData.q.n;
+const fmtTam = b => b >= 1048576 ? (b / 1048576).toFixed(1).replace('.', ',') + ' MB' : Math.ceil(b / 1024) + ' KB';
+async function carregarAnexos(){
+  anexosLista = [];
+  if (!previewMode){
+    const k = anexoChave();
+    try { anexosLista = (await anexoTx('readonly', s => s.getAll())).filter(a => a.chave === k); } catch(e){}
+  }
+  renderAnexos();
+}
+function renderAnexos(){
+  $('#anexoLista').innerHTML = anexosLista.map(a => `
+    <div class="list-q">
+      <div style="min-width:0;overflow-wrap:anywhere">${a.tipo === 'application/pdf' ? '📄' : '🖼️'} <b>${esc(a.nome)}</b><small>${fmtTam(a.tam)}</small></div>
+      <button class="btn danger" style="padding:7px 10px;flex:0 0 auto" aria-label="Remover ${esc(a.nome)}" onclick="delAnexo('${a.id}')">🗑</button>
+    </div>`).join('');
+  $('#anexoEnviar').classList.toggle('hidden', !anexosLista.length);
+  $('#anexoAviso').innerHTML = '';
+}
+async function addAnexos(files){
+  if (previewMode){ toast('Isto é só a prévia: o cliente anexa pelo link dele'); return; }
+  const k = anexoChave();
+  let total = anexosLista.reduce((s, a) => s + a.tam, 0), n = 0, recusados = 0, semGuardar = false;
+  for (const f of [...files]){   // copia: o onchange limpa o input logo depois
+    if (!f.type.startsWith('image/') && f.type !== 'application/pdf'){ recusados++; continue; }
+    if (anexosLista.length >= ANEXO_MAX || total + f.size > ANEXO_MAX_BYTES){ recusados++; continue; }
+    const a = { id: novoId(), chave: k, nome: f.name, tipo: f.type, tam: f.size, blob: f.slice(0, f.size, f.type) };
+    try { await anexoTx('readwrite', s => s.put(a)); } catch(e){ semGuardar = true; }
+    anexosLista.push(a); total += f.size; n++;
+  }
+  renderAnexos();
+  if (recusados) $('#anexoAviso').innerHTML = `<div class="note warn">${recusados === 1 ? 'Um arquivo ficou de fora' : recusados + ' arquivos ficaram de fora'}. Aceitamos fotos e PDF, até ${ANEXO_MAX} arquivos e 50 MB no total.</div>`;
+  else if (semGuardar) $('#anexoAviso').innerHTML = '<div class="note warn">Este navegador não deixou guardar os arquivos. Envie agora, antes de fechar a página.</div>';
+  else if (n) toast(n === 1 ? 'Arquivo anexado' : n + ' arquivos anexados');
+}
+async function delAnexo(id){
+  anexosLista = anexosLista.filter(a => a.id !== id);
+  anexoTx('readwrite', s => s.delete(id)).catch(() => {});
+  renderAnexos();
+}
+function enviarAnexos(){
+  const { p, q: x } = viewData;
+  const texto = `Olá${p.resp ? ', ' + p.resp : ''}! Seguem os arquivos referentes ao orçamento nº ${x.n}.`;
+  const manual = () => {
+    const nomes = anexosLista.map(a => '• ' + a.nome).join('\n');
+    const to = phone(p.wa);
+    window.open(`https://wa.me/${to}?text=${encodeURIComponent(texto + '\n\n' + nomes)}`, '_blank');
+    $('#anexoAviso').innerHTML = '<div class="note warn">Este navegador não envia arquivos sozinho. Na conversa que abriu, toque no clipe e escolha os arquivos da lista acima.</div>';
+  };
+  // Monta os arquivos sem esperar nada: o celular só abre o compartilhamento logo após o toque
+  const arquivos = anexosLista.map(a => new File([a.blob], a.nome, { type: a.tipo }));
+  if (!navigator.canShare?.({ files: arquivos })) return manual();
+  navigator.share({ files: arquivos, text: texto })
+    .then(() => { $('#anexoAviso').innerHTML = '<div class="note ok">Arquivos compartilhados. Eles continuam guardados aqui até você remover.</div>'; })
+    .catch(e => {
+      if (e.name === 'AbortError') return;
+      manual();
+    });
+  $('#anexoAviso').innerHTML = `<div class="note ok">No WhatsApp, escolha a conversa com ${esc(p.resp || 'o prestador')}${p.wa ? ' (' + esc(p.wa) + ')' : ''}.</div>`;
 }
 function printHTML(p, x){
   const t = calc(x), c = x.cli || {};
@@ -1307,7 +1377,7 @@ function toggleRelServ(i, on){ q.rel.skip = q.rel.skip.filter(x => x !== i); if 
 async function addFotos(files){
   relInit();
   let n = 0;
-  for (const f of files){
+  for (const f of [...files]){   // copia: o onchange limpa o input logo depois
     try{
       const id = q.id + ':' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
       await fotoPut(id, await reduzirFoto(f));
@@ -1405,8 +1475,8 @@ function printPDF(){
   setTimeout(() => document.title = old, 1000);
 }
 window.addEventListener('beforeprint', renderPrint);
-function preview(){ showDoc(prof, q, true); $('#backEdit').classList.remove('hidden'); }
-function closePreview(){ viewData = null; $('#viewer').classList.add('hidden'); $('#editor').classList.remove('hidden'); document.title = 'IDL Orçamentos'; }
+function preview(){ previewMode = true; showDoc(prof, q, true); $('#backEdit').classList.remove('hidden'); }
+function closePreview(){ previewMode = false; viewData = null; $('#viewer').classList.add('hidden'); $('#editor').classList.remove('hidden'); document.title = 'Orçamentos'; }
 
 /* ============ senha de acesso + criptografia dos dados ============ */
 const OLHO = {
@@ -1523,7 +1593,7 @@ function mostrarCodigo(codigo, titulo){
 }
 function codigoWhats(){
   const c = $('#lockCodigo').textContent;
-  const msg = `*Código de recuperação do app IDL Orçamentos:*\n\n${c}\n\nGuarde esta mensagem. Ela permite criar uma senha nova sem perder os orçamentos.`;
+  const msg = `*Código de recuperação do app de orçamentos:*\n\n${c}\n\nGuarde esta mensagem. Ela permite criar uma senha nova sem perder os orçamentos.`;
   // sem número: o WhatsApp pede para escolher a conversa (a pessoa escolhe a conversa com ela mesma)
   window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
 }
