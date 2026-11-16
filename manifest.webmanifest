@@ -1,7 +1,7 @@
 {
-  "name": "IDL Orçamentos",
-  "short_name": "IDL Orçamentos",
-  "description": "Orçamentos de manutenção de monitoramento e automação, com envio e autorização pelo WhatsApp.",
+  "name": "Orçamentos",
+  "short_name": "Orçamentos",
+  "description": "Orçamentos de serviços, com envio e autorização pelo WhatsApp.",
   "lang": "pt-BR",
   "start_url": "./",
   "scope": "./",
