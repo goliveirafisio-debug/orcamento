@@ -1,0 +1,16 @@
+# Repositório PÚBLICO: nada de dado real aqui.
+# Planilhas de clientes reais nunca entram (só o modelo do manual).
+*.csv
+*.xlsx
+!manual/modelo-clientes.csv
+
+# Lixo do sistema
+desktop.ini
+Thumbs.db
+.DS_Store
+~$*
+*.tmp
+
+# Segredos
+.env
+.env.*
