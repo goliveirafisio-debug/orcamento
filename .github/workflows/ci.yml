@@ -1,0 +1,24 @@
+# CI do app de orçamentos. O repositório é público (o GitHub Pages hospeda
+# o app), então a cada push e Pull Request confere que nenhum telefone,
+# CPF ou CNPJ real entrou, que scripts externos têm SRI e que o código e o
+# manifesto estão válidos (scripts/verificar.js).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Dados pessoais, SRI, sintaxe e manifesto
+        run: node scripts/verificar.js
