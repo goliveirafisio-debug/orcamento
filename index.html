@@ -944,8 +944,10 @@ function carregarXLSX(){
   if (window.XLSX) return Promise.resolve();
   return new Promise((ok, erro) => {
     const s = document.createElement('script');
-    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
-    s.integrity = 'sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw';
+    /* SheetJS 0.20.3 do CDN oficial: a 0.18.5 (última do npm/cdnjs) tem
+       CVE-2023-30533 e CVE-2024-22363. SRI conferido em 20/11/2026. */
+    s.src = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
+    s.integrity = 'sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT';
     s.crossOrigin = 'anonymous';
     s.onload = ok; s.onerror = () => erro(new Error('xlsx'));
     document.head.appendChild(s);
